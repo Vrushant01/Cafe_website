@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { getSocket, useSocketResync } from '@/lib/socket';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import {
   IOrder,
   ITable,
@@ -214,51 +215,12 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-screen bg-cream p-4 md:p-6 pb-20">
-      {/* Top Navbar */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-4 border-b border-cream-dark gap-3 no-print">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center text-terracotta border border-terracotta/20 shadow-xs">
-            <Coffee className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-serif font-bold text-coffee">Chai Partner Dashboard</h1>
-            <div className="flex items-center gap-2 text-xs font-semibold text-sage">
-              <span className="capitalize px-2 py-0.5 bg-surface border border-cream-dark rounded-full text-coffee">
-                {currentUser?.role || 'Staff'} View
-              </span>
-              <span>•</span>
-              <span>Logged in as {currentUser?.name || 'Staff Member'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2.5 bg-surface border border-cream-dark rounded-xl text-coffee hover:bg-cream transition-colors text-xs font-semibold flex items-center gap-1.5"
-            title="Toggle Chime Sound"
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-terracotta" /> : <VolumeX className="w-4 h-4 text-coffee/50" />}
-            <span className="hidden sm:inline">{soundEnabled ? 'Chime ON' : 'Muted'}</span>
-          </button>
-
-          <button
-            onClick={fetchData}
-            className="p-2.5 bg-surface border border-cream-dark rounded-xl text-coffee hover:bg-cream transition-colors text-xs font-semibold flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-4 h-4 text-sage" />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="p-2.5 bg-surface border border-cream-dark rounded-xl text-error hover:bg-error-light transition-colors text-xs font-semibold flex items-center gap-1.5"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
-        </div>
-      </header>
+      <AdminHeader
+        activeTab="orders"
+        onRefresh={fetchData}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+      />
 
       {errorBanner && (
         <div className="mb-4 p-3 bg-error-light border border-error/30 rounded-xl text-xs font-bold text-error flex items-center justify-between no-print">

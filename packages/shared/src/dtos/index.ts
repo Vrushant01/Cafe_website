@@ -86,3 +86,39 @@ export interface AdminLoginDto {
   email: string;
   password: string;
 }
+
+export interface CreateMenuItemDto {
+  category_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image_url?: string;
+  is_bestseller?: boolean;
+  is_available?: boolean;
+  veg_flag?: boolean;
+}
+
+export interface UpdateMenuItemDto {
+  category_id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  image_url?: string;
+  is_bestseller?: boolean;
+  is_available?: boolean;
+  veg_flag?: boolean;
+}
+
+export interface OrderHistoryFilterDto {
+  search?: string;
+  range?: 'day' | 'week' | 'month' | 'year' | 'all';
+  status?: OrderStatus;
+  payment_method?: PaymentMethod;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProcessRefundDto {
+  amount: number;
+  reason: string;
+}

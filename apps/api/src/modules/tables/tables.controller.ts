@@ -8,7 +8,9 @@ import {
   Request,
 } from '@nestjs/common';
 import { TablesService } from './tables.service';
-import { ForceVacateDto, ContactManagerAlertDto } from '@chai-partner/shared';
+import { ForceVacateDto, ContactManagerAlertDto, AdminRole } from '@chai-partner/shared';
+import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
+import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 
 @Controller('tables')
 export class TablesController {
@@ -25,6 +27,8 @@ export class TablesController {
   }
 
   @Post(':id/force-vacate')
+  @UseGuards(AdminAuthGuard, RolesGuard)
+  @Roles(AdminRole.ADMIN, AdminRole.CASHIER)
   async forceVacate(
     @Param('id') tableId: string,
     @Body() body: ForceVacateDto,

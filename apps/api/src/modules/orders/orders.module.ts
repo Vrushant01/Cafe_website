@@ -12,6 +12,8 @@ import { ReconciliationService } from './reconciliation.service';
 import { OrdersController } from './orders.controller';
 import { EventsGateway } from '../events/events.gateway';
 import { SessionsModule } from '../sessions/sessions.module';
+import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -27,7 +29,13 @@ import { SessionsModule } from '../sessions/sessions.module';
     SessionsModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, ReconciliationService, EventsGateway],
+  providers: [
+    OrdersService,
+    ReconciliationService,
+    EventsGateway,
+    AdminAuthGuard,
+    RolesGuard,
+  ],
   exports: [OrdersService, ReconciliationService],
 })
 export class OrdersModule {}

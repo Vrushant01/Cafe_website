@@ -65,6 +65,7 @@ export interface IOrderItem {
   unit_price: number; // Snapshot, immutable
   item_name?: string;
   veg_flag?: boolean;
+  menu_item?: IMenuItem;
 }
 
 export interface IOrder {

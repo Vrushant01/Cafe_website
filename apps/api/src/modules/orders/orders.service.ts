@@ -22,8 +22,11 @@ import {
   TableStatus,
   SessionStatus,
   CreateOrderDto,
+  OrderHistoryFilterDto,
+  maskPhoneNumber,
   calculateOrderTotals,
 } from '@chai-partner/shared';
+import { CryptoService } from '../../common/services/crypto.service';
 
 @Injectable()
 export class OrdersService {
@@ -45,6 +48,7 @@ export class OrdersService {
     private dataSource: DataSource,
     private auditService: AuditService,
     private eventsGateway: EventsGateway,
+    private cryptoService?: CryptoService,
   ) {}
 
   /**
@@ -413,5 +417,138 @@ export class OrdersService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Order History with multi-criteria search and date range filters
+   */
+  async getOrderHistory(filters: OrderHistoryFilterDto = {}): Promise<{
+    orders: Array<any>;
+    total: number;
+    totalRevenue: number;
+    refundedCount: number;
+  }> {
+    const qb = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.table', 'table')
+      .leftJoinAndSelect('order.session', 'session')
+      .leftJoinAndSelect('order.items', 'items')
+      .leftJoinAndSelect('items.menu_item', 'menu_item')
+      .orderBy('order.created_at', 'DESC');
+
+    // 1. Date Range Filter
+    const now = new Date();
+    if (filters.range === 'day') {
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      qb.andWhere('order.created_at >= :startOfDay', { startOfDay });
+    } else if (filters.range === 'week') {
+      const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      qb.andWhere('order.created_at >= :startOfWeek', { startOfWeek });
+    } else if (filters.range === 'month') {
+      const startOfMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      qb.andWhere('order.created_at >= :startOfMonth', { startOfMonth });
+    } else if (filters.range === 'year') {
+      const startOfYear = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      qb.andWhere('order.created_at >= :startOfYear', { startOfYear });
+    }
+
+    // 2. Status Filter
+    if (filters.status) {
+      qb.andWhere('order.status = :status', { status: filters.status });
+    }
+
+    const allMatching = await qb.getMany();
+
+    // 3. Fetch Payments
+    const orderIds = allMatching.map((o) => o.id);
+    const payments =
+      orderIds.length > 0 ? await this.paymentRepo.find({ where: { order_id: In(orderIds) } }) : [];
+    const paymentMap = new Map(payments.map((p) => [p.order_id, p]));
+
+    // 4. Search Filter (order #, customer name, phone)
+    let filteredOrders = allMatching;
+    const search = filters.search?.toLowerCase().trim();
+
+    if (search) {
+      filteredOrders = allMatching.filter((order) => {
+        // Order Number or ID
+        if (
+          order.order_number?.toLowerCase().includes(search) ||
+          order.id.toLowerCase().includes(search)
+        ) {
+          return true;
+        }
+        // Customer Name
+        if (order.session?.customer_name?.toLowerCase().includes(search)) {
+          return true;
+        }
+        // Phone
+        if (order.session?.phone) {
+          try {
+            const plainPhone = this.cryptoService
+              ? this.cryptoService.decrypt(order.session.phone)
+              : order.session.phone;
+            if (plainPhone.includes(search)) return true;
+          } catch {}
+        }
+        return false;
+      });
+    }
+
+    // 5. Payment Method Filter
+    if (filters.payment_method) {
+      filteredOrders = filteredOrders.filter((order) => {
+        const payment = paymentMap.get(order.id);
+        return payment?.method === filters.payment_method;
+      });
+    }
+
+    // 6. Enrich with masked phone and payment method details
+    const enrichedOrders = filteredOrders.map((order) => {
+      let phoneMasked = 'N/A';
+      if (order.session?.phone) {
+        try {
+          const plain = this.cryptoService
+            ? this.cryptoService.decrypt(order.session.phone)
+            : order.session.phone;
+          phoneMasked = maskPhoneNumber(plain);
+        } catch {
+          phoneMasked = maskPhoneNumber(order.session.phone);
+        }
+      }
+      const payment = paymentMap.get(order.id);
+      return {
+        ...order,
+        phone_masked: phoneMasked,
+        payment: payment || null,
+        payment_method: payment?.method || PaymentMethod.CASH,
+      };
+    });
+
+    const totalRevenue = enrichedOrders
+      .filter(
+        (o) =>
+          o.payment_status === PaymentStatus.PAID ||
+          o.payment_status === PaymentStatus.ADVANCE_PAID,
+      )
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+    const refundedCount = enrichedOrders.filter(
+      (o) =>
+        o.payment_status === PaymentStatus.REFUNDED ||
+        o.status === OrderStatus.CANCELLED,
+    ).length;
+
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 100;
+    const offset = (page - 1) * limit;
+    const paginatedOrders = enrichedOrders.slice(offset, offset + limit);
+
+    return {
+      orders: paginatedOrders,
+      total: enrichedOrders.length,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      refundedCount,
+    };
   }
 }
