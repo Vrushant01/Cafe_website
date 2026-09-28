@@ -8,6 +8,7 @@ import { SessionEntity } from '../../database/entities/session.entity';
 import { PaymentEntity } from '../../database/entities/payment.entity';
 import { IdempotencyKeyEntity } from '../../database/entities/idempotency-key.entity';
 import { OrdersService } from './orders.service';
+import { ReconciliationService } from './reconciliation.service';
 import { OrdersController } from './orders.controller';
 import { EventsGateway } from '../events/events.gateway';
 import { SessionsModule } from '../sessions/sessions.module';
@@ -26,7 +27,7 @@ import { SessionsModule } from '../sessions/sessions.module';
     SessionsModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, EventsGateway],
-  exports: [OrdersService],
+  providers: [OrdersService, ReconciliationService, EventsGateway],
+  exports: [OrdersService, ReconciliationService],
 })
 export class OrdersModule {}

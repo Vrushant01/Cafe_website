@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { ReconciliationService } from './reconciliation.service';
 import {
   CreateOrderDto,
   UpdateOrderStatusDto,
@@ -21,8 +22,14 @@ import { JwtService } from '@nestjs/jwt';
 export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
+    private readonly reconciliationService: ReconciliationService,
     private readonly jwtService: JwtService,
   ) {}
+
+  @Get('reports/pending-reconciliation')
+  async getReconciliationReport() {
+    return this.reconciliationService.generatePendingPaymentReport(2);
+  }
 
   @Post()
   async placeOrder(

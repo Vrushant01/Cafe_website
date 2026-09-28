@@ -15,6 +15,7 @@ import {
   IdempotencyKeyEntity,
 } from '../src/database/entities';
 import { SessionsService } from '../src/modules/sessions/sessions.service';
+import { AuditService } from '../src/modules/audit/audit.service';
 import { CryptoService } from '../src/common/services/crypto.service';
 import { EventsGateway } from '../src/modules/events/events.gateway';
 import { TableStatus, SessionStatus, generateSignedQrToken } from '@chai-partner/shared';
@@ -67,6 +68,8 @@ describe('Table Claim Race & Single Active Session Rule (BRAIN Rule 5)', () => {
       emitAdminAlert: jest.fn(),
     } as unknown as EventsGateway;
 
+    const auditService = new AuditService(dataSource.getRepository(AuditLogEntity));
+
     sessionsService = new SessionsService(
       dataSource.getRepository(SessionEntity),
       dataSource.getRepository(TableEntity),
@@ -74,6 +77,7 @@ describe('Table Claim Race & Single Active Session Rule (BRAIN Rule 5)', () => {
       jwtService,
       cryptoService,
       configService,
+      auditService,
       eventsGateway,
     );
   });

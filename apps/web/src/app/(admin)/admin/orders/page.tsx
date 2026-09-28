@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { getSocket, useSocketResync } from '@/lib/socket';
 import {
   IOrder,
   ITable,
@@ -83,6 +83,9 @@ export default function AdminOrdersPage() {
       setLoading(false);
     }
   };
+
+  // TRD.md §6: Automatic full REST Resync upon socket reconnect
+  useSocketResync(fetchData);
 
   useEffect(() => {
     const rawUser = localStorage.getItem('cp_admin_user');

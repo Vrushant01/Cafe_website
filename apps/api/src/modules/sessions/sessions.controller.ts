@@ -1,5 +1,14 @@
-import { Controller, Post, Body, Get, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Headers,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SessionsService } from './sessions.service';
+import { SessionSweeperService } from './session-sweeper.service';
 import { RequestOtpDto, VerifyOtpDto } from '@chai-partner/shared';
 import { JwtService } from '@nestjs/jwt';
 
@@ -7,12 +16,14 @@ import { JwtService } from '@nestjs/jwt';
 export class SessionsController {
   constructor(
     private readonly sessionsService: SessionsService,
+    private readonly sweeperService: SessionSweeperService,
     private readonly jwtService: JwtService,
   ) {}
 
   @Post('verify/request-otp')
-  async requestOtp(@Body() body: RequestOtpDto) {
-    return this.sessionsService.requestOtp(body);
+  async requestOtp(@Body() body: RequestOtpDto, @Req() req: any) {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    return this.sessionsService.requestOtp(body, Array.isArray(clientIp) ? clientIp[0] : clientIp);
   }
 
   @Post('verify/confirm-otp')
@@ -42,5 +53,24 @@ export class SessionsController {
     } catch {
       throw new UnauthorizedException('Invalid or expired session');
     }
+  }
+
+  @Post('auto-extend')
+  async autoExtend(@Headers('authorization') authHeader: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing session token');
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = this.jwtService.verify(token);
+      return this.sessionsService.autoExtendSession(decoded.sub);
+    } catch {
+      throw new UnauthorizedException('Invalid session');
+    }
+  }
+
+  @Post('admin/sweep')
+  async triggerSweep() {
+    return this.sweeperService.sweepExpiredSessions();
   }
 }

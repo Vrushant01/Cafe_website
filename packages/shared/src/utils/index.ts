@@ -54,6 +54,5 @@ export function maskPhoneNumber(phone: string): string {
   if (!phone || phone.length < 4) return '****';
   const clean = phone.trim();
   const last4 = clean.slice(-4);
-  const prefix = clean.startsWith('+91') ? '+91 ' : '';
-  return `${prefix}******${last4}`;
+  return `+91 ******${last4}`;
 }

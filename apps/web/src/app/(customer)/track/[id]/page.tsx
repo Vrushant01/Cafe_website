@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { getSocket, useSocketResync } from '@/lib/socket';
 import { IOrder, OrderStatus, PaymentStatus, SOCKET_EVENTS } from '@chai-partner/shared';
 import {
   Coffee,
@@ -44,6 +44,9 @@ export default function TrackOrderPage() {
       setLoading(false);
     }
   };
+
+  // TRD.md §6: Automatic REST Resync upon socket reconnect
+  useSocketResync(fetchOrder);
 
   useEffect(() => {
     fetchOrder();
