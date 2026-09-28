@@ -12,6 +12,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -30,6 +31,7 @@ import { AppController } from './app.controller';
     AuthModule,
     PaymentsModule,
     RefundsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
 })

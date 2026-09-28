@@ -135,3 +135,44 @@ export interface IIdempotencyKey {
   response_snapshot: any;
   created_at: Date;
 }
+
+export interface BestsellerStat {
+  item_id: string;
+  name: string;
+  category_name: string;
+  total_qty: number;
+  total_revenue: number;
+  veg_flag: boolean;
+}
+
+export interface SalesPeriodStat {
+  period_label: string;
+  order_count: number;
+  revenue: number;
+}
+
+export interface RevenueTrendPoint {
+  date: string;
+  label: string;
+  revenue: number;
+  order_count: number;
+}
+
+export interface IAnalyticsOverview {
+  total_revenue: number;
+  total_orders: number;
+  average_order_value: number;
+  repeat_customer_rate: number;
+  total_unique_customers: number;
+  repeat_customers_count: number;
+  bestsellers: BestsellerStat[];
+  highest_sales_period: SalesPeriodStat | null;
+  lowest_sales_period: SalesPeriodStat | null;
+  revenue_trend: RevenueTrendPoint[];
+  payment_breakdown: {
+    cash_orders: number;
+    cash_revenue: number;
+    online_orders: number;
+    online_revenue: number;
+  };
+}

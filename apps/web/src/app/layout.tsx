@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Chai Partner — Table Ordering',
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-cream text-coffee antialiased selection:bg-terracotta selection:text-white">
         {children}
+        <PwaInstallPrompt />
       </body>
     </html>
   );

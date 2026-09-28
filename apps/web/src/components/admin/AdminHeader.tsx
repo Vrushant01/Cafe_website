@@ -8,6 +8,7 @@ import {
   ClipboardList,
   UtensilsCrossed,
   History,
+  BarChart3,
   Volume2,
   VolumeX,
   RefreshCw,
@@ -19,7 +20,7 @@ import {
 import { AdminRole } from '@chai-partner/shared';
 
 interface AdminHeaderProps {
-  activeTab: 'orders' | 'menu' | 'history';
+  activeTab: 'orders' | 'menu' | 'history' | 'analytics';
   onRefresh?: () => void;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
@@ -173,6 +174,18 @@ export function AdminHeader({
         >
           <History className="w-4 h-4" />
           <span>Order History</span>
+        </Link>
+
+        <Link
+          href="/admin/analytics"
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'analytics'
+              ? 'bg-terracotta text-cream shadow-xs'
+              : 'text-coffee/70 hover:text-coffee hover:bg-cream/60'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Analytics</span>
         </Link>
       </nav>
     </header>

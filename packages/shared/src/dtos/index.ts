@@ -122,3 +122,7 @@ export interface ProcessRefundDto {
   amount: number;
   reason: string;
 }
+
+export interface AnalyticsQueryDto {
+  range?: 'day' | 'week' | 'month' | 'year' | 'all';
+}
