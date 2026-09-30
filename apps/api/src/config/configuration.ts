@@ -9,7 +9,13 @@ export default () => ({
     username: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || 'chai_partner',
-    url: process.env.DATABASE_URL,
+    ...(process.env.DATABASE_URL 
+      ? { 
+          url: process.env.DATABASE_URL, 
+          ssl: { rejectUnauthorized: false } 
+        } 
+      : {}
+    ),
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
