@@ -73,6 +73,7 @@ describe('Table Claim Race & Single Active Session Rule (BRAIN Rule 5)', () => {
     sessionsService = new SessionsService(
       dataSource.getRepository(SessionEntity),
       dataSource.getRepository(TableEntity),
+      dataSource.getRepository(OrderEntity),
       dataSource,
       jwtService,
       cryptoService,

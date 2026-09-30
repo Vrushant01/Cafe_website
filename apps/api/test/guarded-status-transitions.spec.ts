@@ -261,14 +261,14 @@ describe('Guarded Order Transitions, Idempotency & Snapshot Rules (BRAIN Rules 1
     expect(billedOrder.status).toBe(OrderStatus.BILLED);
     expect(billedOrder.payment_status).toBe(PaymentStatus.PAID);
 
-    // Table must be FREED and available
+    // Table must NOT be freed automatically
     const updatedTable = await dataSource.getRepository(TableEntity).findOne({ where: { id: table.id } });
-    expect(updatedTable?.status).toBe(TableStatus.AVAILABLE);
-    expect(updatedTable?.current_session_id).toBeNull();
+    expect(updatedTable?.status).toBe(TableStatus.OCCUPIED);
+    expect(updatedTable?.current_session_id).toBe(session.id);
 
-    // Session must be CLOSED
+    // Session must STILL be ACTIVE
     const updatedSession = await dataSource.getRepository(SessionEntity).findOne({ where: { id: session.id } });
-    expect(updatedSession?.status).toBe(SessionStatus.CLOSED);
+    expect(updatedSession?.status).toBe(SessionStatus.ACTIVE);
 
     // Audit log was recorded
     const logs = await dataSource.getRepository(AuditLogEntity).find();

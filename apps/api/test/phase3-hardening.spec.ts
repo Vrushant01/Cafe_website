@@ -93,6 +93,7 @@ describe('Phase 3: Session & Table Hardening (Ghost Sweeper, Rate Limits, Auto-E
     sessionsService = new SessionsService(
       dataSource.getRepository(SessionEntity),
       dataSource.getRepository(TableEntity),
+      dataSource.getRepository(OrderEntity),
       dataSource,
       jwtService,
       cryptoService,
