@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  Optional,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -10,8 +11,8 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
   constructor(
-    private jwtService?: JwtService,
-    private configService?: ConfigService,
+    @Optional() private jwtService?: JwtService,
+    @Optional() private configService?: ConfigService,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -49,6 +50,10 @@ export class AdminAuthGuard implements CanActivate {
         decoded = jwt.verify(token, secret);
       }
 
+      if (!decoded || !decoded.role) {
+        throw new UnauthorizedException('Admin authentication required: token is not an admin credential');
+      }
+
       request.user = {
         id: decoded.sub || decoded.id,
         name: decoded.name || 'Staff Member',
@@ -57,7 +62,10 @@ export class AdminAuthGuard implements CanActivate {
       };
 
       return true;
-    } catch {
+    } catch (err: any) {
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      }
       throw new UnauthorizedException('Invalid or expired authentication token');
     }
   }

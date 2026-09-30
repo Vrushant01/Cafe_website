@@ -10,7 +10,7 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get()
-  @Roles(AdminRole.ADMIN, AdminRole.CASHIER)
+  @Roles(AdminRole.ADMIN)
   async getAnalytics(
     @Query('range') range?: 'day' | 'week' | 'month' | 'year' | 'all',
   ): Promise<IAnalyticsOverview> {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,10 +6,12 @@ import { AdminUserEntity } from '../../database/entities/admin-user.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([AdminUserEntity]),
     JwtModule.registerAsync({
+      global: true,
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -23,3 +25,4 @@ import { AuthController } from './auth.controller';
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
+

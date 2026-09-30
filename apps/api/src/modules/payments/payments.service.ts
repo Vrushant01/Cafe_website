@@ -197,6 +197,46 @@ export class PaymentsService {
   }
 
   /**
+   * Mark a payment explicitly as FAILED when Razorpay reports payment.failed
+   * The order remains in the DB (admin can see it in history) and payment_status = FAILED
+   */
+  async markPaymentFailed(
+    orderId: string,
+    errorCode?: string,
+    errorDescription?: string,
+  ): Promise<{ success: boolean }> {
+    const payment = await this.paymentRepo.findOne({
+      where: { order_id: orderId },
+      relations: ['order'],
+    });
+
+    if (payment && payment.status === PaymentStatus.PENDING) {
+      payment.status = PaymentStatus.FAILED;
+      await this.paymentRepo.save(payment);
+
+      await this.orderRepo.update(
+        { id: orderId },
+        { payment_status: PaymentStatus.FAILED },
+      );
+
+      await this.auditService.log({
+        actor_id: 'customer',
+        actor_type: 'customer',
+        action: 'PAYMENT_FAILED_CLIENT',
+        entity: 'payments',
+        entity_id: payment.id,
+        metadata: {
+          order_id: orderId,
+          error_code: errorCode,
+          error_description: errorDescription,
+        },
+      });
+    }
+
+    return { success: true };
+  }
+
+  /**
    * BRAIN Rule 3: Webhook endpoint with signature verification & idempotent updates
    * Handles payment.captured and payment.failed events
    */

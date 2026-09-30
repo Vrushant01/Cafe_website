@@ -55,7 +55,7 @@ export class MenuController {
 
   @Patch('items/:id/availability')
   @UseGuards(AdminAuthGuard, RolesGuard)
-  @Roles(AdminRole.ADMIN, AdminRole.KITCHEN)
+  @Roles(AdminRole.ADMIN, AdminRole.KITCHEN, AdminRole.CASHIER)
   async toggleAvailability(@Param('id') id: string, @Request() req: any) {
     const adminId = req.user?.id || 'admin';
     return this.menuService.toggleAvailability(id, adminId);

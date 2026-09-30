@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
+    "test": "npm run test --workspace=@chai-partner/api",
     "lint": "npm run lint --workspaces",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",

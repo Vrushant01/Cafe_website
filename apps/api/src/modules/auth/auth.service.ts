@@ -23,6 +23,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (user.is_active === false) {
+      throw new UnauthorizedException('Account has been deactivated. Please contact the café owner.');
+    }
+
     const isMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid email or password');

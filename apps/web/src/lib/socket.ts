@@ -4,6 +4,15 @@ import { useEffect } from 'react';
 let socket: Socket | null = null;
 
 export function getSocket(): Socket {
+  if (typeof window === 'undefined') {
+    return {
+      on: () => {},
+      off: () => {},
+      emit: () => {},
+      connected: false,
+    } as unknown as Socket;
+  }
+
   if (!socket) {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
     socket = io(socketUrl, {
@@ -13,6 +22,7 @@ export function getSocket(): Socket {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       randomizationFactor: 0.5,
+      transports: ['websocket', 'polling'],
     });
   }
   return socket;

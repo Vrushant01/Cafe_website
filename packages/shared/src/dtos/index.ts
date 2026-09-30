@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentMethod, PaymentStatus, TableStatus } from '../constants';
+import { AdminRole, OrderStatus, PaymentMethod, PaymentStatus, TableStatus } from '../constants';
 
 export interface ResolveTableResponse {
   table: {
@@ -17,6 +17,8 @@ export interface ResolveTableResponse {
     id: string;
     customer_name: string;
     expires_at: string;
+    status?: string;
+    rejoin_expires_at?: string | null;
   } | null;
 }
 
@@ -125,4 +127,24 @@ export interface ProcessRefundDto {
 
 export interface AnalyticsQueryDto {
   range?: 'day' | 'week' | 'month' | 'year' | 'all';
+}
+
+export interface CreateStaffDto {
+  name: string;
+  email: string;
+  password: string;
+  role: AdminRole;
+  phone?: string;
+}
+
+export interface UpdateStaffDto {
+  name?: string;
+  phone?: string;
+  role?: AdminRole;
+  is_active?: boolean;
+  password?: string;
+}
+
+export interface UpdateStaffStatusDto {
+  is_active: boolean;
 }

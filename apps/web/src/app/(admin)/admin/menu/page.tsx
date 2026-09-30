@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import { AdminHeader } from '@/components/admin/AdminHeader';
+import { useAdminHeader } from '@/contexts/AdminHeaderContext';
 import {
   IMenuCategory,
   IMenuItem,
@@ -58,6 +58,12 @@ export default function AdminMenuPage() {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const { setHeaderState } = useAdminHeader();
+  useEffect(() => {
+    setHeaderState({ onRefresh: fetchMenu });
+    return () => setHeaderState({});
+  }, [setHeaderState]); // Omit fetchMenu from deps or use useCallback
 
   const fetchMenu = async () => {
     try {
@@ -284,8 +290,7 @@ export default function AdminMenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream px-4 py-6 md:px-8 max-w-7xl mx-auto">
-      <AdminHeader activeTab="menu" onRefresh={fetchMenu} />
+    <div className="w-full h-full pb-20">
 
       {/* Role permission info banner */}
       {!isAdmin && (

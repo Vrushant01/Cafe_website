@@ -41,23 +41,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitOrderStatusChanged(orderId: string, newStatus: OrderStatus, sessionId?: string) {
     this.server.emit(SOCKET_EVENTS.ORDER_STATUS_CHANGED, { orderId, newStatus });
-    if (sessionId) {
-      this.server.to(`session_${sessionId}`).emit(SOCKET_EVENTS.ORDER_STATUS_CHANGED, { orderId, newStatus });
-    }
   }
 
   emitNewOrder(order: any) {
     this.server.emit(SOCKET_EVENTS.ORDER_NEW, { order });
-    this.server.to('admin').emit(SOCKET_EVENTS.ORDER_NEW, { order });
   }
 
   emitOrderUpdated(orderId: string, changedFields: Record<string, any>) {
     this.server.emit(SOCKET_EVENTS.ORDER_UPDATED, { orderId, changedFields });
-    this.server.to('admin').emit(SOCKET_EVENTS.ORDER_UPDATED, { orderId, changedFields });
   }
 
   emitAdminAlert(alert: { type: string; title: string; message: string; tableNumber?: number }) {
     this.server.to('admin').emit('admin:alert', alert);
-    this.server.emit('admin:alert', alert);
   }
 }

@@ -138,8 +138,9 @@ async function exportQrCodes() {
 </html>`;
 
   fs.writeFileSync(htmlPath, htmlContent);
+  fs.writeFileSync(path.join(outDir, 'print-cards.html'), htmlContent);
 
-  console.log(`Saved 25 PNGs, PDF (${pdfPath}), and HTML sheet (${htmlPath})!`);
+  console.log(`Saved 25 PNGs, PDF (${pdfPath}), and HTML sheets (${htmlPath})!`);
 }
 
 if (require.main === module) {

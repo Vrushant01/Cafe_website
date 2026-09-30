@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { StaffModule } from './modules/staff/staff.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -32,6 +33,7 @@ import { AppController } from './app.controller';
     PaymentsModule,
     RefundsModule,
     AnalyticsModule,
+    StaffModule,
   ],
   controllers: [AppController],
 })

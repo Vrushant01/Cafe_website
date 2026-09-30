@@ -9,44 +9,32 @@ import {
   UtensilsCrossed,
   History,
   BarChart3,
+  Users,
+  LogOut,
+  RefreshCw,
   Volume2,
   VolumeX,
-  RefreshCw,
-  LogOut,
-  ShieldCheck,
-  ChefHat,
-  Receipt,
 } from 'lucide-react';
-import { AdminRole } from '@chai-partner/shared';
+import { AdminRole, Permission, hasPermission } from '@/lib/permissions';
+import { useAdminHeader } from '@/contexts/AdminHeaderContext';
 
 interface AdminHeaderProps {
-  activeTab: 'orders' | 'menu' | 'history' | 'analytics';
-  onRefresh?: () => void;
-  soundEnabled?: boolean;
-  onToggleSound?: () => void;
+  activeTab: 'orders' | 'menu' | 'history' | 'analytics' | 'staff';
 }
 
-export function AdminHeader({
-  activeTab,
-  onRefresh,
-  soundEnabled,
-  onToggleSound,
-}: AdminHeaderProps) {
+export function AdminHeader({ activeTab }: AdminHeaderProps) {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{
-    id?: string;
-    name: string;
-    role: string;
-    email?: string;
-  } | null>(null);
-
+  const { onRefresh, soundEnabled, onToggleSound } = useAdminHeader();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const [currentUser, setCurrentUser] = useState<{ id?: string; name: string; role: string; email?: string } | null>(null);
+  
+  // Hydrate user strictly on client to avoid mismatch since this is a Layout now
   useEffect(() => {
-    const rawUser = localStorage.getItem('cp_admin_user');
-    if (rawUser) {
-      try {
-        setCurrentUser(JSON.parse(rawUser));
-      } catch {}
-    }
+    try {
+      const rawUser = localStorage.getItem('cp_admin_user');
+      if (rawUser) setCurrentUser(JSON.parse(rawUser));
+    } catch {}
   }, []);
 
   const handleLogout = () => {
@@ -55,139 +43,131 @@ export function AdminHeader({
     router.push('/admin/login');
   };
 
-  const getRoleBadge = (role: string = '') => {
-    const r = role.toLowerCase();
-    if (r === AdminRole.ADMIN) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-terracotta/10 text-terracotta border border-terracotta/25">
-          <ShieldCheck className="w-3 h-3" />
-          Admin
-        </span>
-      );
-    }
-    if (r === AdminRole.KITCHEN) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber/15 text-amber border border-amber/30">
-          <ChefHat className="w-3 h-3" />
-          Kitchen
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sage/15 text-sage border border-sage/30">
-        <Receipt className="w-3 h-3" />
-        Cashier
-      </span>
-    );
+  const handleRefreshClick = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try { await onRefresh(); } finally { setTimeout(() => setIsRefreshing(false), 600); }
   };
 
+  const currentRole = currentUser?.role?.toLowerCase() as AdminRole | undefined;
+
+  const getRoleLabel = (role?: string) => {
+    if (!role) return '';
+    const r = role.toLowerCase();
+    if (r === AdminRole.ADMIN) return 'OWNER / ADMIN';
+    if (r === AdminRole.KITCHEN) return 'HEAD CHEF';
+    return 'CASHIER / POS';
+  };
+  
+  const getRoleLetter = (role?: string) => {
+    if (!role) return '';
+    const r = role.toLowerCase();
+    if (r === AdminRole.ADMIN) return 'O';
+    if (r === AdminRole.KITCHEN) return 'H';
+    return 'C';
+  };
+
+  const allNavItems = [
+    { tab: 'orders' as const, href: '/admin/orders', icon: ClipboardList, label: 'Live Queue', permission: 'orders.view' as Permission },
+    { tab: 'menu' as const, href: '/admin/menu', icon: UtensilsCrossed, label: 'Menu', permission: 'menu.view' as Permission },
+    { tab: 'history' as const, href: '/admin/history', icon: History, label: 'History', permission: 'orders.history' as Permission },
+    { tab: 'analytics' as const, href: '/admin/analytics', icon: BarChart3, label: 'Analytics', permission: 'analytics.view' as Permission },
+    { tab: 'staff' as const, href: '/admin/staff', icon: Users, label: 'Staff', permission: 'staff.manage' as Permission },
+  ];
+
+  const visibleNavItems = allNavItems.filter((item) => {
+    if (!currentRole) return false;
+    return hasPermission(currentRole, item.permission);
+  });
+
+  const canPrintQr = currentRole === AdminRole.ADMIN;
+
   return (
-    <header className="mb-6 bg-surface border border-cream-dark/60 rounded-2xl p-4 shadow-xs no-print">
-      {/* Top row: Brand + User Info + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cream-dark/40">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-cream rounded-xl flex items-center justify-center text-terracotta border border-terracotta/20 shadow-xs">
-            <Coffee className="w-5 h-5" />
+    <header className="sticky top-0 z-40 bg-surface border-b border-divider h-16 w-full no-print">
+      <div className="grid grid-cols-3 items-center h-full max-w-[1600px] mx-auto px-6">
+        
+        {/* LEFT: Brand */}
+        <Link href="/admin/orders" className="flex items-center gap-3 w-fit hover:opacity-80 transition-opacity">
+          <div className="w-8 h-8 rounded-lg bg-surface border border-divider flex flex-col items-center justify-center text-accent">
+            <Coffee className="w-4 h-4" strokeWidth={2.5} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-serif font-bold text-coffee">Chai Partner</h1>
-              {getRoleBadge(currentUser?.role)}
+          <div className="flex flex-col">
+            <span className="text-sm font-serif font-bold text-ink leading-tight">Chai Partner</span>
+            <span className="text-[9px] font-sans font-bold uppercase tracking-[0.2em] text-accent leading-none mt-0.5">Operations</span>
+          </div>
+        </Link>
+
+        {/* CENTER: Navigation */}
+        <nav className="flex items-center justify-center gap-1">
+          {visibleNavItems.map((item) => {
+            const isActive = activeTab === item.tab;
+            return (
+              <Link
+                key={item.tab}
+                href={item.href}
+                className={`px-4 h-9 rounded-md text-sm font-sans font-semibold flex items-center gap-2 whitespace-nowrap transition-colors ${
+                  isActive 
+                    ? 'bg-canvas text-accent' 
+                    : 'text-ink-muted hover:bg-canvas hover:text-ink'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+          
+          {canPrintQr && (
+            <a href="/generated-qrs/print-cards.html" target="_blank" rel="noreferrer"
+               className="px-4 h-9 rounded-md text-sm font-sans font-semibold flex items-center gap-2 whitespace-nowrap text-ink-muted hover:bg-canvas hover:text-ink transition-colors">
+              Print QRs
+            </a>
+          )}
+        </nav>
+
+        {/* RIGHT: User Controls */}
+        <div className="flex items-center justify-end gap-5">
+
+          {/* Context Actions */}
+          <div className="flex items-center gap-1">
+            {onToggleSound !== undefined && (
+              <button type="button" onClick={onToggleSound}
+                className="h-8 w-8 rounded-md flex items-center justify-center transition-colors text-ink-muted hover:bg-canvas hover:text-ink"
+                title={soundEnabled ? 'Mute Chime' : 'Enable Chime'}>
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+            )}
+            {onRefresh && (
+              <button type="button" onClick={handleRefreshClick} disabled={isRefreshing}
+                className="h-8 w-8 rounded-md flex items-center justify-center transition-colors text-ink-muted hover:bg-canvas hover:text-ink disabled:opacity-50"
+                title="Refresh">
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-accent' : ''}`} />
+              </button>
+            )}
+          </div>
+          
+          {(onToggleSound || onRefresh) && <div className="w-px h-6 bg-divider mx-1 hidden sm:block"></div>}
+
+          {currentUser && (
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col text-right">
+                <span className="text-sm font-sans font-bold text-ink leading-tight whitespace-nowrap">{currentUser.name}</span>
+                <span className="text-[10px] font-sans font-semibold text-ink-muted uppercase tracking-wider mt-0.5 whitespace-nowrap">{getRoleLabel(currentUser.role)}</span>
+              </div>
+              <div className="w-9 h-9 rounded-lg bg-canvas border border-divider flex items-center justify-center text-sm font-bold text-ink">
+                {getRoleLetter(currentUser.role)}
+              </div>
             </div>
-            <p className="text-xs font-medium text-sage">
-              Signed in as <span className="font-semibold text-coffee">{currentUser?.name || 'Staff Member'}</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {onToggleSound !== undefined && (
-            <button
-              onClick={onToggleSound}
-              className="p-2 bg-cream/50 border border-cream-dark rounded-xl text-coffee hover:bg-cream transition-colors text-xs font-semibold flex items-center gap-1.5"
-              title="Toggle Chime Sound"
-            >
-              {soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-terracotta" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-coffee/50" />
-              )}
-              <span className="hidden md:inline">{soundEnabled ? 'Chime ON' : 'Muted'}</span>
-            </button>
           )}
 
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              className="p-2 bg-cream/50 border border-cream-dark rounded-xl text-coffee hover:bg-cream transition-colors text-xs font-semibold flex items-center gap-1.5"
-              title="Refresh Data"
-            >
-              <RefreshCw className="w-4 h-4 text-sage" />
-              <span className="hidden md:inline">Refresh</span>
-            </button>
-          )}
+          <div className="w-px h-6 bg-divider mx-1 hidden sm:block"></div>
 
-          <button
-            onClick={handleLogout}
-            className="p-2 bg-cream/50 border border-cream-dark rounded-xl text-error hover:bg-error-light transition-colors text-xs font-semibold flex items-center gap-1.5"
-            title="Sign Out"
-          >
+          <button onClick={handleLogout} className="text-ink-muted hover:text-danger transition-colors flex items-center gap-1.5 text-sm font-medium">
             <LogOut className="w-4 h-4" />
-            <span className="hidden md:inline">Sign Out</span>
+            <span className="hidden sm:inline">Exit</span>
           </button>
+          
         </div>
       </div>
-
-      {/* Navigation Tabs */}
-      <nav className="flex items-center gap-1 sm:gap-2 pt-3">
-        <Link
-          href="/admin/orders"
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'orders'
-              ? 'bg-terracotta text-cream shadow-xs'
-              : 'text-coffee/70 hover:text-coffee hover:bg-cream/60'
-          }`}
-        >
-          <ClipboardList className="w-4 h-4" />
-          <span>Live Orders Queue</span>
-        </Link>
-
-        <Link
-          href="/admin/menu"
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'menu'
-              ? 'bg-terracotta text-cream shadow-xs'
-              : 'text-coffee/70 hover:text-coffee hover:bg-cream/60'
-          }`}
-        >
-          <UtensilsCrossed className="w-4 h-4" />
-          <span>Menu Management</span>
-        </Link>
-
-        <Link
-          href="/admin/history"
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'history'
-              ? 'bg-terracotta text-cream shadow-xs'
-              : 'text-coffee/70 hover:text-coffee hover:bg-cream/60'
-          }`}
-        >
-          <History className="w-4 h-4" />
-          <span>Order History</span>
-        </Link>
-
-        <Link
-          href="/admin/analytics"
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'analytics'
-              ? 'bg-terracotta text-cream shadow-xs'
-              : 'text-coffee/70 hover:text-coffee hover:bg-cream/60'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>Analytics</span>
-        </Link>
-      </nav>
     </header>
   );
 }

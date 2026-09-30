@@ -53,6 +53,21 @@ export class SessionEntity {
   })
   status!: SessionStatus;
 
+  @Column({ type: DateTimeColumnType, nullable: true })
+  exited_at?: Date | null;
+
+  @Column({ type: DateTimeColumnType, nullable: true })
+  rejoin_expires_at?: Date | null;
+
+  @Column({ type: DateTimeColumnType, nullable: true })
+  completed_at?: Date | null;
+
+  @Column({ type: DateTimeColumnType, nullable: true })
+  closed_at?: Date | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  completion_reason?: string | null;
+
   @CreateDateColumn()
   created_at!: Date;
 

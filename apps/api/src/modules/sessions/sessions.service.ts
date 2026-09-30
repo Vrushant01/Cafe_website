@@ -8,17 +8,19 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SessionEntity } from '../../database/entities/session.entity';
 import { TableEntity } from '../../database/entities/table.entity';
+import { OrderEntity } from '../../database/entities/order.entity';
 import { CryptoService } from '../../common/services/crypto.service';
 import { AuditService } from '../audit/audit.service';
 import { EventsGateway } from '../events/events.gateway';
 import {
   TableStatus,
   SessionStatus,
+  OrderStatus,
   RequestOtpDto,
   VerifyOtpDto,
   VerifyOtpResponse,
@@ -55,6 +57,8 @@ export class SessionsService {
     private sessionRepo: Repository<SessionEntity>,
     @InjectRepository(TableEntity)
     private tableRepo: Repository<TableEntity>,
+    @InjectRepository(OrderEntity)
+    private orderRepo: Repository<OrderEntity>,
     private dataSource: DataSource,
     private jwtService: JwtService,
     private cryptoService: CryptoService,
@@ -136,7 +140,20 @@ export class SessionsService {
     }
 
     if (table.status === TableStatus.OCCUPIED) {
-      throw new ConflictException(`Table ${table.table_number} is currently occupied by another customer`);
+      let canRejoin = false;
+      if (table.current_session_id) {
+        const currentSession = await this.sessionRepo.findOne({ where: { id: table.current_session_id } });
+        if (currentSession && currentSession.status === SessionStatus.EXITED) {
+          const decryptedPhone = this.cryptoService.decrypt(currentSession.phone);
+          if (decryptedPhone === cleanPhone) {
+            canRejoin = true;
+          }
+        }
+      }
+      
+      if (!canRejoin) {
+        throw new ConflictException(`Table ${table.table_number} is currently occupied by another customer`);
+      }
     }
 
     // Enforce rate limits
@@ -236,7 +253,58 @@ export class SessionsService {
       }
 
       if (table.status === TableStatus.OCCUPIED) {
-        throw new ConflictException(`Table ${table.table_number} was just occupied by someone else`);
+        let isRejoin = false;
+        if (table.current_session_id) {
+          const currentSession = await queryRunner.manager.findOne(SessionEntity, { where: { id: table.current_session_id } });
+          if (currentSession && currentSession.status === SessionStatus.EXITED) {
+            const decryptedPhone = this.cryptoService.decrypt(currentSession.phone);
+            if (decryptedPhone === cleanPhone) {
+              if (currentSession.rejoin_expires_at && Date.now() > currentSession.rejoin_expires_at.getTime()) {
+                throw new BadRequestException('Your 2-minute rejoin window has expired. Please start a new session.');
+              }
+
+              isRejoin = true;
+              
+              // Restore EXITED session!
+              currentSession.status = SessionStatus.ACTIVE;
+              currentSession.exited_at = null;
+              currentSession.rejoin_expires_at = null;
+              
+              // We also want to update customer details if they changed them slightly, but for now we keep the same.
+              await queryRunner.manager.save(SessionEntity, currentSession);
+              await queryRunner.commitTransaction();
+              
+              const sessionToken = this.jwtService.sign({
+                sub: currentSession.id,
+                table_id: table.id,
+                table_number: table.table_number,
+                customer_name: currentSession.customer_name,
+              });
+
+              return {
+                session_token: sessionToken,
+                session: {
+                  id: currentSession.id,
+                  table_id: table.id,
+                  customer_name: currentSession.customer_name,
+                  phone_masked: cleanPhone.slice(0, 2) + '******' + cleanPhone.slice(-2),
+                  expires_at: currentSession.expires_at.toISOString(),
+                  status: currentSession.status,
+                },
+                table: {
+                  id: table.id,
+                  table_number: table.table_number,
+                  seat_count: table.seat_count,
+                  status: TableStatus.OCCUPIED,
+                },
+              };
+            }
+          }
+        }
+        
+        if (!isRejoin) {
+          throw new ConflictException(`Table ${table.table_number} was just occupied by someone else`);
+        }
       }
 
       const startedAt = new Date();
@@ -356,7 +424,7 @@ export class SessionsService {
       throw new UnauthorizedException('Session not found');
     }
 
-    if (session.status !== SessionStatus.ACTIVE) {
+    if (![SessionStatus.ACTIVE, SessionStatus.EXITED, SessionStatus.COMPLETED].includes(session.status)) {
       throw new UnauthorizedException(`Session is ${session.status}`);
     }
 
@@ -367,5 +435,147 @@ export class SessionsService {
     }
 
     return session;
+  }
+
+  async exitSession(sessionId: string) {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+      relations: ['table'],
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.status !== SessionStatus.ACTIVE) {
+      throw new BadRequestException(`Session is ${session.status}, cannot exit.`);
+    }
+
+    const now = new Date();
+    session.status = SessionStatus.EXITED;
+    session.exited_at = now;
+    session.rejoin_expires_at = new Date(now.getTime() + 2 * 60 * 1000); // 2 minutes from now
+
+    await this.sessionRepo.save(session);
+    
+    // Notify staff that customer temporarily away
+    this.eventsGateway.emitAdminAlert({
+      type: 'CUSTOMER_EXITED',
+      title: `Table ${session.table?.table_number} Customer Away`,
+      message: `Customer is temporarily away. Rejoin window active for 2 minutes.`,
+      tableNumber: session.table?.table_number,
+    });
+
+    await this.auditService.log({
+      actor_id: session.id,
+      actor_type: 'customer',
+      action: 'SESSION_EXITED',
+      entity: 'sessions',
+      entity_id: session.id,
+      metadata: {
+        table_number: session.table?.table_number,
+        rejoin_expires_at: session.rejoin_expires_at,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Session exited. Rejoin available for 2 minutes.',
+      rejoinExpiresAt: session.rejoin_expires_at,
+    };
+  }
+
+  async completeSession(sessionId: string) {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+      relations: ['table'],
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    
+    // Idempotency check!
+    if (session.status === SessionStatus.COMPLETED) {
+      return { success: true, message: 'Session already completed' };
+    }
+
+    if (session.status !== SessionStatus.ACTIVE) {
+      throw new BadRequestException(`Session is ${session.status}, cannot complete.`);
+    }
+
+    // Check if ALL active orders are completed (SERVED or BILLED)
+    const activeOrders = await this.orderRepo.find({
+      where: {
+        session_id: sessionId,
+        status: In([OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]),
+      },
+    });
+
+    if (activeOrders.length > 0) {
+      throw new BadRequestException('Cannot complete session: some orders are not yet served.');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const now = new Date();
+      session.status = SessionStatus.COMPLETED;
+      session.completed_at = now;
+      session.completion_reason = 'DONE';
+      
+      await queryRunner.manager.save(SessionEntity, session);
+
+      // Generate consolidated final bill
+      const allSessionOrders = await queryRunner.manager.find(OrderEntity, {
+        where: { session_id: sessionId },
+      });
+      
+      const finalAmount = allSessionOrders.reduce((sum, order) => {
+        if (order.status !== OrderStatus.CANCELLED) {
+          return sum + Number(order.total);
+        }
+        return sum;
+      }, 0);
+
+      // Free table
+      await queryRunner.manager.update(
+        TableEntity,
+        { id: session.table_id },
+        { status: TableStatus.AVAILABLE, current_session_id: null },
+      );
+      
+      await queryRunner.commitTransaction();
+
+      this.eventsGateway.emitTableStatusChanged(session.table_id, TableStatus.AVAILABLE);
+      this.eventsGateway.emitAdminAlert({
+        type: 'SESSION_COMPLETED',
+        title: `Table ${session.table?.table_number} is available`,
+        message: `Customer completed their dining session. Table is freed.`,
+        tableNumber: session.table?.table_number,
+      });
+
+      await this.auditService.log({
+        actor_id: session.id,
+        actor_type: 'customer',
+        action: 'SESSION_COMPLETED',
+        entity: 'sessions',
+        entity_id: session.id,
+        metadata: {
+          table_number: session.table?.table_number,
+          total_orders: allSessionOrders.length,
+          final_amount: finalAmount,
+          email_delivery_status: 'FAILED', // Mock failure for missing provider
+          phone_delivery_status: 'FAILED',
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Session completed successfully. Bill sent.',
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

@@ -94,14 +94,14 @@ export class OrdersController {
 
   @Patch(':id/status')
   @UseGuards(AdminAuthGuard, RolesGuard)
-  @Roles(AdminRole.ADMIN, AdminRole.KITCHEN)
+  @Roles(AdminRole.ADMIN, AdminRole.KITCHEN, AdminRole.CASHIER)
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
     @Request() req: any,
   ) {
     const adminId = req.user?.id || 'admin-staff';
-    const adminName = req.user?.name || 'Kitchen Staff';
+    const adminName = req.user?.name || 'Staff Member';
     return this.ordersService.transitionStatus(
       id,
       dto.expected_status,

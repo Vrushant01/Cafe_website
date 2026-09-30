@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import { AdminHeader } from '@/components/admin/AdminHeader';
+import { useAdminHeader } from '@/contexts/AdminHeaderContext';
 import {
   IOrder,
   OrderStatus,
@@ -76,6 +76,12 @@ export default function AdminOrderHistoryPage() {
   const [loggedRefunds, setLoggedRefunds] = useState<IRefund[]>([]);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const { setHeaderState } = useAdminHeader();
+  useEffect(() => {
+    setHeaderState({ onRefresh: fetchHistory });
+    return () => setHeaderState({});
+  }, [setHeaderState]); // Omit fetchHistory from deps
 
   const fetchHistory = async () => {
     try {
@@ -234,8 +240,7 @@ export default function AdminOrderHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream px-4 py-6 md:px-8 max-w-7xl mx-auto">
-      <AdminHeader activeTab="history" onRefresh={fetchHistory} />
+    <div className="w-full h-full pb-20">
 
       {/* Notification banner */}
       {notification && (
@@ -390,6 +395,8 @@ export default function AdminOrderHistoryPage() {
             const isExpanded = expandedOrderId === order.id;
             const isCancelled = order.status === OrderStatus.CANCELLED;
             const isRefunded = order.payment_status === PaymentStatus.REFUNDED;
+            const isPaymentFailed = order.payment_status === PaymentStatus.FAILED;
+            const isPendingPayment = order.payment_status === PaymentStatus.PENDING && order.payment_method === 'razorpay';
             const formattedDate = new Date(order.created_at).toLocaleString('en-IN', {
               dateStyle: 'medium',
               timeStyle: 'short',
@@ -412,6 +419,18 @@ export default function AdminOrderHistoryPage() {
                         Table {order.table?.table_number || '?'}
                       </span>
                       {getStatusBadge(order.status)}
+
+                      {/* Payment Failed Badge */}
+                      {isPaymentFailed && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                          ⚠ Payment Failed
+                        </span>
+                      )}
+                      {isPendingPayment && !isPaymentFailed && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          ⏳ Payment Pending
+                        </span>
+                      )}
 
                       {/* Payment Method Badge */}
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-cream/70 text-coffee/80 border border-cream-dark">

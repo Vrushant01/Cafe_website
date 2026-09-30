@@ -25,6 +25,18 @@ export class PaymentsController {
     return this.paymentsService.verifyClientSignature(dto);
   }
 
+  @Post('razorpay/failed')
+  async markPaymentFailed(
+    @Body('order_id') orderId: string,
+    @Body('error_code') errorCode?: string,
+    @Body('error_description') errorDescription?: string,
+  ) {
+    if (!orderId) {
+      throw new BadRequestException('order_id is required');
+    }
+    return this.paymentsService.markPaymentFailed(orderId, errorCode, errorDescription);
+  }
+
   @Post('razorpay/webhook')
   async handleWebhook(
     @Req() req: any,
@@ -34,3 +46,4 @@ export class PaymentsController {
     return this.paymentsService.handleWebhook(rawBody, signature);
   }
 }
+

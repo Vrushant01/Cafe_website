@@ -1,13 +1,34 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Playfair_Display, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
-import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Chai Partner — Table Ordering',
-  description: 'Fast, self-serve QR table ordering & live tracking at Chai Partner',
+  title: 'Chai Partner — Artisan Cafe Ordering',
+  description: 'Premium table-bound ordering & live kitchen tracking at Chai Partner Artisan Cafe',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/icon.png',
   },
 };
 
@@ -16,19 +37,34 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#8B5E3C',
+  themeColor: '#FAFAF8',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-cream text-coffee antialiased selection:bg-terracotta selection:text-white">
+    <html
+      lang="en"
+      className={`scroll-smooth ${inter.variable} ${playfair.variable} ${cormorant.variable}`}
+    >
+      <head>
+        <style
+          id="critical-fallback-css"
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body {
+                background-color: #F8F5F0 !important;
+                color: #1E1813;
+                margin: 0;
+                padding: 0;
+                font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                -webkit-font-smoothing: antialiased;
+              }
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen bg-canvas text-ink antialiased">
         {children}
-        <PwaInstallPrompt />
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In, DataSource } from 'typeorm';
 import { SessionEntity } from '../../database/entities/session.entity';
@@ -21,8 +21,24 @@ export interface SweepResult {
 }
 
 @Injectable()
-export class SessionSweeperService {
+export class SessionSweeperService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SessionSweeperService.name);
+  private sweepInterval?: NodeJS.Timeout;
+
+  onModuleInit() {
+    // Run automated ghost session sweep every 60 seconds (non-blocking)
+    this.sweepInterval = setInterval(() => {
+      this.sweepExpiredSessions().catch((err) =>
+        this.logger.error('Background session sweep failed:', err),
+      );
+    }, 60000);
+  }
+
+  onModuleDestroy() {
+    if (this.sweepInterval) {
+      clearInterval(this.sweepInterval);
+    }
+  }
 
   constructor(
     @InjectRepository(SessionEntity)
@@ -46,6 +62,14 @@ export class SessionSweeperService {
       where: {
         status: SessionStatus.ACTIVE,
         expires_at: LessThan(now),
+      },
+      relations: ['table'],
+    });
+
+    const exitTimedOutSessions = await this.sessionRepo.find({
+      where: {
+        status: SessionStatus.EXITED,
+        rejoin_expires_at: LessThan(now),
       },
       relations: ['table'],
     });
@@ -154,6 +178,60 @@ export class SessionSweeperService {
       } catch (err) {
         await queryRunner.rollbackTransaction();
         this.logger.error(`Failed to process expired session ${session.id}:`, err);
+      } finally {
+        await queryRunner.release();
+      }
+    }
+
+    // --- SWEEP EXITED TIMEOUTS ---
+    for (const session of exitTimedOutSessions) {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      
+      try {
+        session.status = SessionStatus.EXPIRED;
+        session.closed_at = now;
+        session.completion_reason = 'EXIT_TIMEOUT';
+        await queryRunner.manager.save(SessionEntity, session);
+
+        await queryRunner.manager.update(
+          TableEntity,
+          { id: session.table_id },
+          { status: TableStatus.AVAILABLE, current_session_id: null },
+        );
+
+        await queryRunner.commitTransaction();
+
+        sweptGhostSessions++;
+
+        this.eventsGateway.emitTableStatusChanged(session.table_id, TableStatus.AVAILABLE);
+
+        this.eventsGateway.emitAdminAlert({
+          type: 'EXIT_TIMEOUT',
+          title: `Table ${session.table?.table_number} is now available`,
+          message: `Customer did not rejoin within 2 minutes. Session closed.`,
+          tableNumber: session.table?.table_number,
+        });
+
+        await this.auditService.log({
+          actor_id: 'exit-sweeper',
+          actor_type: 'system',
+          action: 'EXIT_TIMEOUT_SWEPT',
+          entity: 'sessions',
+          entity_id: session.id,
+          metadata: {
+            table_id: session.table_id,
+            table_number: session.table?.table_number,
+            customer_name: session.customer_name,
+            reason: '2-minute rejoin window expired.',
+          },
+        });
+        
+        this.logger.log(`[Exit Sweeper] Session ${session.id} timed out. Table ${session.table?.table_number} freed.`);
+      } catch (err) {
+        await queryRunner.rollbackTransaction();
+        this.logger.error(`[Exit Sweeper] Error sweeping session ${session.id}:`, err);
       } finally {
         await queryRunner.release();
       }

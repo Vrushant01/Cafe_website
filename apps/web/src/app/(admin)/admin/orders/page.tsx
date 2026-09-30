@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { getSocket, useSocketResync } from '@/lib/socket';
-import { AdminHeader } from '@/components/admin/AdminHeader';
+import { useAdminHeader } from '@/contexts/AdminHeaderContext';
 import {
   IOrder,
   ITable,
@@ -49,6 +49,7 @@ export default function AdminOrdersPage() {
   const [vacateReason, setVacateReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [floorNotifications, setFloorNotifications] = useState<{ id: string; title: string; message: string; timestamp: Date; tableNumber?: number }[]>([]);
 
   // Play a pleasant cafe bell chime using Web Audio API
   const playChime = () => {
@@ -68,6 +69,16 @@ export default function AdminOrdersPage() {
       osc.stop(audioCtx.currentTime + 1.2);
     } catch {}
   };
+
+  const { setHeaderState } = useAdminHeader();
+  useEffect(() => {
+    setHeaderState({
+      onRefresh: fetchData,
+      soundEnabled,
+      onToggleSound: () => setSoundEnabled(!soundEnabled)
+    });
+    return () => setHeaderState({});
+  }, [soundEnabled, setHeaderState]); // fetchData is omitted intentionally to avoid loops, or assume stable
 
   const fetchData = async () => {
     try {
@@ -125,9 +136,18 @@ export default function AdminOrdersPage() {
       );
     };
 
-    const handleAdminAlert = (alert: any) => {
+    const handleAdminAlert = (notification: any) => {
       playChime();
-      alert(`[Floor Notification] ${alert.title}: ${alert.message}`);
+      setFloorNotifications((prev) => [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          title: notification.title || 'Notification',
+          message: notification.message || '',
+          timestamp: new Date(),
+          tableNumber: notification.tableNumber,
+        },
+        ...prev,
+      ]);
     };
 
     socket.on(SOCKET_EVENTS.ORDER_NEW, handleNewOrder);
@@ -214,13 +234,7 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream p-4 md:p-6 pb-20">
-      <AdminHeader
-        activeTab="orders"
-        onRefresh={fetchData}
-        soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled(!soundEnabled)}
-      />
+    <div className="w-full h-full pb-20">
 
       {errorBanner && (
         <div className="mb-4 p-3 bg-error-light border border-error/30 rounded-xl text-xs font-bold text-error flex items-center justify-between no-print">
@@ -232,6 +246,61 @@ export default function AdminOrdersPage() {
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+      )}
+
+      {floorNotifications.length > 0 && (
+        <section className="bg-white border border-danger/20 rounded-2xl p-4 shadow-sm mb-6 no-print">
+          <div className="flex items-center justify-between mb-3 border-b border-divider pb-2">
+            <div className="flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-danger animate-pulse" />
+              <h2 className="text-sm font-bold text-ink">Floor Notifications</h2>
+              <span className="bg-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {floorNotifications.length}
+              </span>
+            </div>
+            <button
+              onClick={() => setFloorNotifications([])}
+              className="text-xs text-ink-muted hover:text-danger font-semibold transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {floorNotifications.map((note) => (
+              <div key={note.id} className="p-3 bg-danger-bg/50 border border-danger-border rounded-xl flex items-start gap-3 relative group">
+                <div className="w-2 h-2 rounded-full bg-danger mt-1.5 flex-shrink-0"></div>
+                <div className="flex-1 min-w-0 pr-6">
+                  <p className="text-xs font-bold text-danger-dark mb-0.5">{note.title}</p>
+                  <p className="text-[11px] text-danger/80 leading-relaxed">{note.message}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <p className="text-[9px] text-danger/60 font-mono">
+                      {note.timestamp.toLocaleTimeString()}
+                    </p>
+                    {note.tableNumber && (
+                      <button
+                        onClick={() => {
+                          const t = tables.find((t) => t.table_number === note.tableNumber);
+                          if (t) setVacateTable(t);
+                          setFloorNotifications((prev) => prev.filter((n) => n.id !== note.id));
+                        }}
+                        className="text-[10px] font-bold px-2 py-0.5 bg-danger text-white rounded hover:bg-danger-dark transition-all shadow-sm active:scale-95"
+                      >
+                        Vacate Table
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setFloorNotifications((prev) => prev.filter(n => n.id !== note.id))}
+                  className="absolute top-2 right-2 p-1 text-danger/50 hover:text-danger rounded hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-all"
+                  title="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Live Floor Overview */}
@@ -254,23 +323,32 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-13 gap-1.5">
-          {tables.map((t) => {
+          {tables.map((t: any) => {
             const isOcc = t.status === TableStatus.OCCUPIED;
+            const isExited = isOcc && t.current_session?.status === 'exited';
+            
+            let bgClass = 'bg-cream/40 border-cream-dark text-coffee/80';
+            let titleStr = `Table ${t.table_number} Available`;
+            if (isExited) {
+              bgClass = 'bg-amber-100 border-amber-300 text-amber-800 hover:border-amber-400';
+              titleStr = `Table ${t.table_number} Temporarily Away`;
+            } else if (isOcc) {
+              bgClass = 'bg-error-light border-error/30 text-error hover:border-error';
+              titleStr = `Table ${t.table_number} Occupied - Click to Force Vacate`;
+            }
+
             return (
               <button
                 key={t.id}
                 onClick={() => {
                   if (isOcc) setVacateTable(t);
                 }}
-                className={`p-2 rounded-xl text-center border transition-all ${
-                  isOcc
-                    ? 'bg-error-light border-error/30 text-error hover:border-error'
-                    : 'bg-cream/40 border-cream-dark text-coffee/80'
-                }`}
-                title={isOcc ? `Table ${t.table_number} Occupied - Click to Force Vacate` : `Table ${t.table_number} Available`}
+                className={`p-2 rounded-xl flex flex-col items-center justify-center text-center border transition-all ${bgClass}`}
+                title={titleStr}
               >
                 <div className="text-[11px] font-bold">T{t.table_number}</div>
-                <div className="text-[9px] font-semibold">{t.seat_count}s</div>
+                {!isExited && <div className="text-[9px] font-semibold">{t.seat_count}s</div>}
+                {isExited && <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Away</div>}
               </button>
             );
           })}

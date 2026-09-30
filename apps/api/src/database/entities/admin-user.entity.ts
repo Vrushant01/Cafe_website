@@ -31,6 +31,9 @@ export class AdminUserEntity {
   @Column({ type: 'varchar', length: 255 })
   password_hash!: string;
 
+  @Column({ type: 'boolean', default: true })
+  is_active!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 

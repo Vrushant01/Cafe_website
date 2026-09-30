@@ -133,9 +133,13 @@ export class OrdersService {
     await queryRunner.startTransaction();
 
     try {
-      // Generate sequential order number CP-XXXX
+      // Generate sequential order number CP-XXXX with collision safeguard
       const count = await queryRunner.manager.count(OrderEntity);
-      const orderNumber = `CP-${1001 + count}`;
+      let orderNumber = `CP-${1001 + count}`;
+      const existingWithNum = await queryRunner.manager.findOne(OrderEntity, { where: { order_number: orderNumber } });
+      if (existingWithNum) {
+        orderNumber = `CP-${1001 + count}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      }
 
       const order = queryRunner.manager.create(OrderEntity, {
         session_id: session.id,
@@ -192,8 +196,17 @@ export class OrdersService {
       this.eventsGateway.emitNewOrder(populated);
 
       return populated;
-    } catch (err) {
+    } catch (err: any) {
       await queryRunner.rollbackTransaction();
+      // Handle concurrent duplicate idempotency race condition gracefully
+      if (err.message?.includes('idempotency') || err.code === 'SQLITE_CONSTRAINT' || err.code === '23505') {
+        const cached = await this.idempotencyRepo.findOne({
+          where: { session_id: sessionId, key: cleanKey },
+        });
+        if (cached && cached.response_snapshot) {
+          return cached.response_snapshot as OrderEntity;
+        }
+      }
       throw err;
     } finally {
       await queryRunner.release();
@@ -244,10 +257,10 @@ export class OrdersService {
   ): Promise<OrderEntity> {
     // Valid lifecycle transitions
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-      [OrderStatus.PLACED]: [OrderStatus.ACCEPTED, OrderStatus.CANCELLED],
+      [OrderStatus.PLACED]: [OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.CANCELLED],
       [OrderStatus.ACCEPTED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
       [OrderStatus.PREPARING]: [OrderStatus.READY, OrderStatus.CANCELLED],
-      [OrderStatus.READY]: [OrderStatus.SERVED, OrderStatus.BILLED],
+      [OrderStatus.READY]: [OrderStatus.SERVED, OrderStatus.BILLED, OrderStatus.CANCELLED],
       [OrderStatus.SERVED]: [OrderStatus.BILLED],
       [OrderStatus.BILLED]: [],
       [OrderStatus.CANCELLED]: [],
@@ -353,38 +366,9 @@ export class OrdersService {
         await queryRunner.manager.save(PaymentEntity, payment);
       }
 
-      // 3. BRAIN Rule 6: Free the table and close session!
-      // Check if there are any other active/unbilled orders for this session
-      const remainingUnbilled = await queryRunner.manager.count(OrderEntity, {
-        where: {
-          session_id: order.session_id,
-          status: In([
-            OrderStatus.PLACED,
-            OrderStatus.ACCEPTED,
-            OrderStatus.PREPARING,
-            OrderStatus.READY,
-            OrderStatus.SERVED,
-          ]),
-        },
-      });
-
-      if (remainingUnbilled === 0) {
-        // Close session
-        await queryRunner.manager.update(
-          SessionEntity,
-          { id: order.session_id },
-          { status: SessionStatus.CLOSED },
-        );
-
-        // Free table
-        await queryRunner.manager.update(
-          TableEntity,
-          { id: order.table_id },
-          { status: TableStatus.AVAILABLE, current_session_id: null },
-        );
-
-        this.eventsGateway.emitTableStatusChanged(order.table_id, TableStatus.AVAILABLE);
-      }
+      // We used to automatically close the session and free the table here if remainingUnbilled === 0.
+      // But cafes often have customers who pay but stay at the table.
+      // The admin will now manually free the table using the 'Vacate Table' button on the dashboard grid.
 
       await queryRunner.commitTransaction();
 
@@ -400,7 +384,7 @@ export class OrdersService {
           total: order.total,
           settled_method: settledMethod,
           admin_name: adminName,
-          table_freed: remainingUnbilled === 0,
+          table_freed: false,
         },
       });
 

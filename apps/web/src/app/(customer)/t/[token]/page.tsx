@@ -5,7 +5,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { ResolveTableResponse, TableStatus, SOCKET_EVENTS } from '@chai-partner/shared';
-import { Coffee, Users, ShieldAlert, CheckCircle2, PhoneCall, ArrowRight, Loader2, BellRing } from 'lucide-react';
+import {
+  Coffee,
+  Users,
+  CheckCircle2,
+  PhoneCall,
+  ArrowRight,
+  Loader2,
+  BellRing,
+  Sparkles,
+} from 'lucide-react';
+import { TableStatusBadge } from '@/components/ui/Badge';
 
 export default function TableLandingPage() {
   const params = useParams();
@@ -25,7 +35,7 @@ export default function TableLandingPage() {
       const res = await apiFetch<ResolveTableResponse>(`/tables/${token}/resolve`);
       setData(res);
     } catch (err: any) {
-      setError(err.message || 'Unable to resolve table QR code. Please ask staff for assistance.');
+      setError(err.message || 'Unable to resolve table QR code. Please ask our café staff for assistance.');
     } finally {
       setLoading(false);
     }
@@ -78,24 +88,31 @@ export default function TableLandingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <Loader2 className="w-10 h-10 text-terracotta animate-spin mb-4" />
-        <p className="text-coffee font-medium">Resolving your table...</p>
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 rounded-xl bg-white border border-divider shadow-xs flex items-center justify-center mb-3 text-gold-deep">
+          <Coffee className="w-6 h-6 animate-pulse" strokeWidth={1.8} />
+        </div>
+        <h2 className="text-lg font-bold text-ink mb-1">
+          Welcome to Chai Partner
+        </h2>
+        <p className="text-xs text-ink-muted">Locating your table reservation...</p>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center max-w-sm mx-auto">
-        <div className="w-14 h-14 bg-error-light rounded-2xl flex items-center justify-center text-error mb-4">
-          <ShieldAlert className="w-8 h-8" />
+      <div className="min-h-screen bg-canvas max-w-md mx-auto p-6 flex flex-col items-center justify-center text-center">
+        <div className="w-12 h-12 rounded-xl bg-danger-bg border border-danger-border flex items-center justify-center mb-3 text-danger">
+          <Coffee className="w-6 h-6" strokeWidth={1.8} />
         </div>
-        <h2 className="text-xl font-bold text-coffee mb-2">QR Code Not Recognized</h2>
-        <p className="text-sm text-coffee/70 mb-6 leading-relaxed">{error}</p>
+        <h2 className="text-lg font-bold text-ink mb-2">QR Code Not Recognized</h2>
+        <p className="text-xs sm:text-sm text-ink-muted mb-6 leading-relaxed">
+          {error || 'This table code could not be verified. Please scan the QR card on your table or ask our counter staff.'}
+        </p>
         <button
           onClick={() => window.location.reload()}
-          className="w-full py-3 px-6 bg-terracotta hover:bg-terracotta-hover text-surface rounded-xl font-semibold transition-colors"
+          className="h-10 px-6 bg-gold hover:bg-gold-deep text-white rounded-lg font-bold text-xs shadow-xs transition-all"
         >
           Try Again
         </button>
@@ -103,153 +120,177 @@ export default function TableLandingPage() {
     );
   }
 
-  const { table, all_tables } = data;
+  const { table } = data;
   const isAvailable = table.status === TableStatus.AVAILABLE;
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto p-4 pb-20">
-      {/* Cafe Header */}
-      <header className="flex items-center justify-between py-4 mb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center border border-terracotta/20 text-terracotta shadow-xs">
-            <Coffee className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-serif font-bold text-coffee leading-tight">Chai Partner</h1>
-            <p className="text-xs text-sage font-medium">Table Experience</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface border border-cream-dark rounded-full text-xs font-semibold text-coffee">
-          <span className="w-2 h-2 rounded-full bg-success pulse-live"></span>
-          <span>Live Floor</span>
-        </div>
-      </header>
-
-      {/* Hero: Current Scanned Table Card */}
-      <section className="bg-surface border-2 border-terracotta/30 rounded-2xl p-5 shadow-sm mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-sage">You are at</span>
-            <h2 className="text-2xl font-serif font-bold text-coffee mt-0.5">Table {table.table_number}</h2>
-            <div className="flex items-center gap-1 text-xs text-coffee/70 mt-1 font-medium">
-              <Users className="w-3.5 h-3.5 text-sage" />
-              <span>{table.seat_count} Seats</span>
+    <div className="min-h-screen bg-canvas text-ink flex flex-col justify-between p-4 sm:p-6 max-w-lg mx-auto">
+      <div>
+        {/* Top Mini Brand Header */}
+        <header className="flex items-center justify-between pb-4 mb-6 border-b border-divider/60">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-canvas-warm border border-gold/30 flex items-center justify-center text-gold-deep shadow-xs">
+              <Coffee className="w-4 h-4" strokeWidth={1.8} />
+            </div>
+            <div>
+              <span
+                className="font-serif font-bold text-ink text-base tracking-tight leading-none block"
+                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              >
+                Chai Partner
+              </span>
+              <span className="text-[10px] text-ink-faint font-medium">Artisan Café Experience</span>
             </div>
           </div>
 
-          <div
-            className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-              isAvailable
-                ? 'bg-success-light text-success border border-success/30'
-                : 'bg-error-light text-error border border-error/30'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-success' : 'bg-error'}`}></span>
-            <span>{isAvailable ? 'Available' : 'Occupied'}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-divider/60 rounded-md text-[11px] font-medium text-ink-muted">
+            <span className="w-2 h-2 rounded-full bg-ok pulse-live" />
+            <span>Open Dining</span>
           </div>
-        </div>
+        </header>
 
-        {isAvailable ? (
-          <div className="mt-5">
-            <button
-              onClick={() =>
-                router.push(
-                  `/verify?table_id=${table.id}&table_number=${table.table_number}&token=${token}`,
-                )
-              }
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-terracotta hover:bg-terracotta-hover text-surface rounded-xl font-bold shadow-sm transition-all text-base"
-            >
-              <span>Sit & Start Ordering</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <p className="text-xs text-center text-coffee/60 mt-2 font-medium">
-              Takes 10 seconds • Quick OTP confirmation
-            </p>
+        {/* Café Welcome Hero Block */}
+        <div className="bg-white rounded-2xl border border-divider/80 overflow-hidden shadow-xs mb-6">
+          {/* Subtle Food Hero Banner */}
+          <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-canvas-warm">
+            <img
+              src="/images/menu/kulhad_chai.jpg"
+              alt="Chai Partner Artisan Cafe"
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute bottom-3 left-4 right-4 text-white">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold-pale/90 bg-gold-deep/80 px-2 py-0.5 rounded">
+                Table Hospitality
+              </span>
+              <h1
+                className="text-2xl sm:text-3xl font-serif font-bold text-white mt-1"
+                style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+              >
+                Table {String(table.table_number).padStart(2, '0')}
+              </h1>
+            </div>
           </div>
-        ) : (
-          /* Occupied Fallback per PRD §6.1 / App-Flow §1.1 */
-          <div className="mt-5 pt-4 border-t border-cream-dark">
-            <div className="bg-cream/50 rounded-xl p-4 border border-terracotta/15 mb-4">
-              <h3 className="text-sm font-bold text-coffee mb-1">
-                Looks like this table shows occupied
-              </h3>
-              <p className="text-xs text-coffee/75 leading-relaxed">
-                If you are physically sitting here and the previous guest has left, tap below to notify
-                our manager or speak to the billing counter.
-              </p>
+
+          {/* Details & Actions */}
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center justify-between pb-4 border-b border-divider/60">
+              <div className="flex items-center gap-2 text-xs text-ink-muted font-medium">
+                <Users className="w-4 h-4 text-gold-deep" />
+                <span>{table.seat_count} Guest Dining Seats</span>
+              </div>
+              <TableStatusBadge status={table.status} />
             </div>
 
-            {alertSent ? (
-              <div className="p-3 bg-success-light border border-success/30 rounded-xl flex items-center gap-2 text-xs font-semibold text-success">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>Manager notified! Staff will assist you at Table {table.table_number} in a moment.</span>
+            {isAvailable ? (
+              <div className="pt-4">
+                <p
+                  className="text-lg font-serif font-bold text-ink mb-1"
+                  style={{ fontFamily: 'Playfair Display, Georgia, serif' }}
+                >
+                  Welcome. Your table is ready.
+                </p>
+                <p className="text-xs sm:text-sm text-ink-muted leading-relaxed mb-6">
+                  Browse our freshly brewed chais, artisanal coffees, and comforting kitchen bites crafted to order right to your seat.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/verify?table_id=${table.id}&table_number=${table.table_number}&token=${token}`,
+                    )
+                  }
+                  className="w-full h-11 bg-gold hover:bg-gold-deep text-white rounded-xl font-bold text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98"
+                >
+                  <span>Take Seat & Start Ordering</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <p className="text-[11px] text-center text-ink-faint mt-3">
+                  Quick 10-second verification • Direct kitchen ordering
+                </p>
+              </div>
+            ) : data.active_session?.status === 'exited' ? (
+              <div className="pt-4">
+                <div className="bg-canvas-warm p-4 rounded-xl border border-divider/60 mb-4">
+                  <p className="text-xs font-bold text-ink mb-1 flex items-center gap-1.5">
+                    <Coffee className="w-3.5 h-3.5 text-gold-deep" />
+                    Table reserved for returning customer
+                  </p>
+                  <p className="text-xs text-ink-muted leading-relaxed">
+                    This table is temporarily reserved for a customer who stepped away. If you are that customer, you can rejoin your session.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/verify?table_id=${table.id}&table_number=${table.table_number}&token=${token}`,
+                    )
+                  }
+                  className="w-full h-11 bg-ink hover:bg-black text-white rounded-xl font-bold text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98"
+                >
+                  <span>Verify OTP to Rejoin</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             ) : (
-              <button
-                onClick={handleNotifyStaff}
-                disabled={alertLoading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-sage text-surface hover:bg-sage-dark rounded-xl text-sm font-bold transition-colors"
-              >
-                {alertLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <BellRing className="w-4 h-4" />
-                )}
-                <span>Notify Staff / Clear Table</span>
-              </button>
-            )}
-
-            <div className="mt-3 flex items-center justify-between text-xs text-coffee/80 bg-surface border border-cream-dark p-3 rounded-xl">
-              <div>
-                <p className="font-bold text-coffee">Manager Desk</p>
-                <p className="text-sage">Chai Partner Counter</p>
-              </div>
-              <a
-                href="tel:+919876543210"
-                className="flex items-center gap-1.5 py-1.5 px-3 bg-cream hover:bg-cream-dark rounded-lg font-bold text-coffee text-xs transition-colors"
-              >
-                <PhoneCall className="w-3.5 h-3.5 text-terracotta" />
-                <span>Call Counter</span>
-              </a>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Grid of All 25 Tables */}
-      <section>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="text-sm font-bold text-coffee tracking-wide uppercase">Cafe Floor Overview</h3>
-          <span className="text-xs text-sage font-medium">{all_tables.length} Tables Total</span>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2 sm:grid-cols-5">
-          {all_tables.map((t) => {
-            const isThisTable = t.id === table.id;
-            const isTableAvail = t.status === TableStatus.AVAILABLE;
-            return (
-              <div
-                key={t.id}
-                className={`p-2.5 rounded-xl text-center border transition-all ${
-                  isThisTable
-                    ? 'border-terracotta bg-cream shadow-xs ring-2 ring-terracotta/30'
-                    : 'border-terracotta/10 bg-surface'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      isTableAvail ? 'bg-success' : 'bg-error'
-                    }`}
-                  ></span>
-                  <span className="text-xs font-bold text-coffee">T{t.table_number}</span>
+              /* Occupied Handling */
+              <div className="pt-4">
+                <div className="bg-canvas-warm p-4 rounded-xl border border-divider/60 mb-4">
+                  <p className="text-xs font-bold text-ink mb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-gold-deep" />
+                    Table currently marked as occupied
+                  </p>
+                  <p className="text-xs text-ink-muted leading-relaxed">
+                    If you are sitting here and the previous dining session has completed, notify our floor team below so we can clear your table immediately.
+                  </p>
                 </div>
-                <div className="text-[10px] text-coffee/60 font-medium">{t.seat_count}s</div>
+
+                {alertSent ? (
+                  <div className="p-3 bg-ok-bg border border-ok-border rounded-xl flex items-center gap-2 text-xs font-semibold text-ok">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>Floor staff notified! An associate is heading to Table {table.table_number}.</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNotifyStaff}
+                    disabled={alertLoading}
+                    className="w-full h-10 bg-ink hover:bg-black text-white rounded-xl text-xs font-bold shadow-xs transition-all inline-flex items-center justify-center gap-2"
+                  >
+                    {alertLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BellRing className="w-4 h-4 text-gold" />
+                    )}
+                    <span>Notify Floor Staff to Clear Table</span>
+                  </button>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-divider/60 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-semibold text-ink">Need Immediate Help?</p>
+                    <p className="text-[11px] text-ink-faint">Visit our café billing counter</p>
+                  </div>
+                  <a
+                    href="tel:+919876543210"
+                    className="h-8 px-3 bg-canvas-warm hover:bg-white rounded-lg font-semibold text-ink text-xs inline-flex items-center gap-1.5 border border-divider transition-colors"
+                  >
+                    <PhoneCall className="w-3 h-3 text-gold-deep" />
+                    <span>Call Counter</span>
+                  </a>
+                </div>
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
-      </section>
+      </div>
+
+      <footer className="text-center text-[11px] text-ink-faint pt-4 border-t border-divider/40">
+        Chai Partner Café • Artisan Dining Experience
+      </footer>
     </div>
   );
 }

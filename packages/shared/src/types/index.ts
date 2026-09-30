@@ -114,7 +114,9 @@ export interface IAdminUser {
   phone?: string | null;
   email: string;
   password_hash?: string;
+  is_active?: boolean;
   created_at: Date;
+  updated_at?: Date;
 }
 
 export interface IAuditLog {
