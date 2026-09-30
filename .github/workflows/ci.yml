@@ -51,6 +51,9 @@ jobs:
       - name: Lint code
         run: npm run lint
 
+      - name: Build shared workspace package
+        run: npm run build --workspace=@chai-partner/shared
+
       - name: Run test suites (guarded transitions & races)
         env:
           DB_HOST: localhost
