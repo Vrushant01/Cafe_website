@@ -22,11 +22,11 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'Chai Partner — Artisan Cafe Ordering',
-  description: 'Premium table-bound ordering & live kitchen tracking at Chai Partner Artisan Cafe',
+  title: 'Chai Partner — Artisan Café & Roastery',
+  description: 'Fresh chai, artisan beverages, and comforting café bites at Chai Partner. Scan your table QR to order and enjoy your dining experience.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.png',
+    icon: '/favicon.ico',
     shortcut: '/favicon.ico',
     apple: '/icon.png',
   },

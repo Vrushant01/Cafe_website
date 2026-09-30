@@ -42,7 +42,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     'orders.settle',
     'orders.history',
     'menu.view',
-    'tables.manage',
   ],
 };
 

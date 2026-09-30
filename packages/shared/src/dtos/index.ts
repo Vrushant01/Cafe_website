@@ -148,3 +148,17 @@ export interface UpdateStaffDto {
 export interface UpdateStaffStatusDto {
   is_active: boolean;
 }
+
+export interface CreateTableDto {
+  table_number: number;
+  seat_count?: number;
+}
+
+export interface UpdateTableDto {
+  table_number?: number;
+  seat_count?: number;
+}
+
+export interface DisableTableDto {
+  reason?: string;
+}

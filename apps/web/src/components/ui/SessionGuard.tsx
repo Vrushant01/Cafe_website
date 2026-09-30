@@ -4,6 +4,7 @@ import { useEffect, useState, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { Coffee, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 
 export function SessionGuard({ children }: { children: ReactNode }) {
@@ -179,9 +180,13 @@ export function SessionGuard({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <p className="text-sm font-bold text-ink-muted uppercase tracking-wider">
+        <p className="text-sm font-bold text-ink-muted uppercase tracking-wider mb-8">
           Table released
         </p>
+
+        <Link href="/" className="h-12 px-8 rounded-full bg-ink text-white font-bold flex items-center justify-center text-xs uppercase tracking-widest hover:bg-gold-deep transition-colors">
+          Back to Home
+        </Link>
       </div>
     );
   }

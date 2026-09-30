@@ -14,6 +14,15 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { dev }) => {
+    // Prevent Webpack cache corruption and MODULE_NOT_FOUND errors in dev
+    if (dev) {
+      config.cache = {
+        type: 'memory',
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

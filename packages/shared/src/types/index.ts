@@ -14,6 +14,8 @@ export interface ITable {
   status: TableStatus;
   current_session_id?: string | null;
   qr_token: string;
+  is_active: boolean;
+  qr_version: number;
   created_at?: Date;
   updated_at?: Date;
 }

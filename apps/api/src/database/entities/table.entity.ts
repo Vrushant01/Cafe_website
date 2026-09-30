@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
 } from 'typeorm';
 import { TableStatus } from '@chai-partner/shared';
 
@@ -31,6 +30,18 @@ export class TableEntity {
 
   @Column({ type: 'varchar', length: 120, unique: true })
   qr_token!: string;
+
+  /** Soft-delete / owner-disable. False = temporarily disabled from QR entry. */
+  @Column({ type: 'boolean', default: true })
+  is_active!: boolean;
+
+  /** True soft-delete. Hides from all UI and resolves. */
+  @Column({ type: 'boolean', default: false })
+  is_deleted!: boolean;
+
+  /** Incremented on QR regeneration to invalidate printed QRs. */
+  @Column({ type: 'int', default: 1 })
+  qr_version!: number;
 
   @CreateDateColumn()
   created_at!: Date;

@@ -14,12 +14,13 @@ import {
   RefreshCw,
   Volume2,
   VolumeX,
+  LayoutGrid,
 } from 'lucide-react';
 import { AdminRole, Permission, hasPermission } from '@/lib/permissions';
 import { useAdminHeader } from '@/contexts/AdminHeaderContext';
 
 interface AdminHeaderProps {
-  activeTab: 'orders' | 'menu' | 'history' | 'analytics' | 'staff';
+  activeTab: 'orders' | 'menu' | 'history' | 'analytics' | 'staff' | 'tables';
 }
 
 export function AdminHeader({ activeTab }: AdminHeaderProps) {
@@ -73,14 +74,13 @@ export function AdminHeader({ activeTab }: AdminHeaderProps) {
     { tab: 'history' as const, href: '/admin/history', icon: History, label: 'History', permission: 'orders.history' as Permission },
     { tab: 'analytics' as const, href: '/admin/analytics', icon: BarChart3, label: 'Analytics', permission: 'analytics.view' as Permission },
     { tab: 'staff' as const, href: '/admin/staff', icon: Users, label: 'Staff', permission: 'staff.manage' as Permission },
+    { tab: 'tables' as const, href: '/admin/tables', icon: LayoutGrid, label: 'Tables', permission: 'tables.manage' as Permission },
   ];
 
   const visibleNavItems = allNavItems.filter((item) => {
     if (!currentRole) return false;
     return hasPermission(currentRole, item.permission);
   });
-
-  const canPrintQr = currentRole === AdminRole.ADMIN;
 
   return (
     <header className="sticky top-0 z-40 bg-surface border-b border-divider h-16 w-full no-print">
@@ -116,12 +116,6 @@ export function AdminHeader({ activeTab }: AdminHeaderProps) {
             );
           })}
           
-          {canPrintQr && (
-            <a href="/generated-qrs/print-cards.html" target="_blank" rel="noreferrer"
-               className="px-4 h-9 rounded-md text-sm font-sans font-semibold flex items-center gap-2 whitespace-nowrap text-ink-muted hover:bg-canvas hover:text-ink transition-colors">
-              Print QRs
-            </a>
-          )}
         </nav>
 
         {/* RIGHT: User Controls */}

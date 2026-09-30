@@ -43,8 +43,8 @@ export class CryptoService {
     }
   }
 
-  generateQrToken(tableNumber: number): string {
-    return generateSignedQrToken(tableNumber, this.qrSecret);
+  generateQrToken(tableNumber: number, version: number = 1): string {
+    return generateSignedQrToken(tableNumber, this.qrSecret, version);
   }
 
   verifyQrToken(token: string): { valid: boolean; tableNumber?: number } {

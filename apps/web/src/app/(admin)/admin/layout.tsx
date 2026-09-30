@@ -18,6 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   else if (pathname.includes('/history')) activeTab = 'history';
   else if (pathname.includes('/analytics')) activeTab = 'analytics';
   else if (pathname.includes('/staff')) activeTab = 'staff';
+  else if (pathname.includes('/tables')) activeTab = 'tables';
 
   return (
     <AdminHeaderProvider>
