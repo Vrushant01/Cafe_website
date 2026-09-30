@@ -17,8 +17,9 @@ export function SessionGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const fetchSession = async () => {
+      let token: string | null = null;
       try {
-        const token = localStorage.getItem('cp_session_token');
+        token = localStorage.getItem('cp_session_token');
         if (!token) {
           if (!pathname.startsWith('/t/') && !pathname.startsWith('/verify')) {
             router.replace('/');
@@ -27,7 +28,7 @@ export function SessionGuard({ children }: { children: ReactNode }) {
           return;
         }
 
-        const data = await apiFetch<any>('/sessions/current');
+        const data = await apiFetch<any>('/sessions/current', { token });
 
         // Rule: If session is COMPLETED or EXPIRED, and customer is scanning a QR (/t/) or verifying,
         // it means they are trying to start a fresh session. Do not restore the old terminal session!
@@ -57,10 +58,16 @@ export function SessionGuard({ children }: { children: ReactNode }) {
       } catch (err: any) {
         console.error('Session guard failed:', err);
         if (err.message && (err.message.toLowerCase().includes('unauthorized') || err.message.toLowerCase().includes('expired'))) {
-          localStorage.removeItem('cp_session_token');
-          localStorage.removeItem('cp_table_number');
-          localStorage.removeItem('cp_session_order_ids');
-          setError(true);
+          // RACE CONDITION FIX: Only clear if the token that failed is STILL the active token
+          const currentToken = localStorage.getItem('cp_session_token');
+          if (currentToken === token) {
+            localStorage.removeItem('cp_session_token');
+            localStorage.removeItem('cp_table_number');
+            localStorage.removeItem('cp_session_order_ids');
+            setError(true);
+          } else {
+            console.warn('[SessionGuard] Ignored error for stale session token validation');
+          }
         }
       } finally {
         setLoading(false);
