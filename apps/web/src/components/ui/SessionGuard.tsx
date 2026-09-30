@@ -15,13 +15,24 @@ export function SessionGuard({ children }: { children: ReactNode }) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [error, setError] = useState(false);
 
+  // Classify routes
+  const isPublicRoute = pathname === '/' || pathname.startsWith('/about') || pathname.startsWith('/contact');
+  const isAuthRoute = pathname.startsWith('/t/') || pathname.startsWith('/verify');
+  const isProtectedRoute = !isPublicRoute && !isAuthRoute;
+
   useEffect(() => {
     const fetchSession = async () => {
+      // Do not run session validation on public routes
+      if (isPublicRoute) {
+        setLoading(false);
+        return;
+      }
+
       let token: string | null = null;
       try {
         token = localStorage.getItem('cp_session_token');
         if (!token) {
-          if (!pathname.startsWith('/t/') && !pathname.startsWith('/verify')) {
+          if (isProtectedRoute) {
             router.replace('/');
           }
           setLoading(false);
@@ -32,8 +43,7 @@ export function SessionGuard({ children }: { children: ReactNode }) {
 
         // Rule: If session is COMPLETED or EXPIRED, and customer is scanning a QR (/t/) or verifying,
         // it means they are trying to start a fresh session. Do not restore the old terminal session!
-        if ((data.session.status === 'completed' || data.session.status === 'expired') && 
-            (pathname.startsWith('/t/') || pathname.startsWith('/verify'))) {
+        if ((data.session.status === 'completed' || data.session.status === 'expired') && isAuthRoute) {
           localStorage.removeItem('cp_session_token');
           localStorage.removeItem('cp_table_number');
           localStorage.removeItem('cp_session_order_ids');
@@ -43,8 +53,7 @@ export function SessionGuard({ children }: { children: ReactNode }) {
         }
 
         // Rule: If session is ACTIVE, and they are scanning the QR or on verify, auto-redirect to their menu
-        if (data.session.status === 'active' && 
-            (pathname.startsWith('/t/') || pathname.startsWith('/verify'))) {
+        if (data.session.status === 'active' && isAuthRoute) {
            router.replace('/menu');
            return;
         }
@@ -56,15 +65,20 @@ export function SessionGuard({ children }: { children: ReactNode }) {
           setTimeLeft(Math.max(0, Math.floor((expiry - Date.now()) / 1000)));
         }
       } catch (err: any) {
-        console.error('Session guard failed:', err);
+        console.warn('[SessionGuard] Validation failed:', err.message);
         if (err.message && (err.message.toLowerCase().includes('unauthorized') || err.message.toLowerCase().includes('expired'))) {
           // RACE CONDITION FIX: Only clear if the token that failed is STILL the active token
           const currentToken = localStorage.getItem('cp_session_token');
           if (currentToken === token) {
+            // Silently clear the old token
             localStorage.removeItem('cp_session_token');
             localStorage.removeItem('cp_table_number');
             localStorage.removeItem('cp_session_order_ids');
-            setError(true);
+            
+            // Only show the hard error screen on protected routes
+            if (isProtectedRoute) {
+              setError(true);
+            }
           } else {
             console.warn('[SessionGuard] Ignored error for stale session token validation');
           }
@@ -76,10 +90,15 @@ export function SessionGuard({ children }: { children: ReactNode }) {
 
     fetchSession();
     
-    // Poll every 10 seconds to catch server-side sweeps
-    const interval = setInterval(fetchSession, 10000);
-    return () => clearInterval(interval);
-  }, [router, pathname]);
+    // Poll every 10 seconds to catch server-side sweeps, BUT NOT on public routes or auth routes
+    let interval: NodeJS.Timeout | null = null;
+    if (isProtectedRoute) {
+      interval = setInterval(fetchSession, 10000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [router, pathname, isPublicRoute, isAuthRoute, isProtectedRoute]);
 
   useEffect(() => {
     if (sessionData?.status === 'exited') {
@@ -103,6 +122,17 @@ export function SessionGuard({ children }: { children: ReactNode }) {
     }
   }, [sessionData?.status, timeLeft]);
 
+  // 1. If it's a public route, always render bypass immediately
+  if (isPublicRoute) {
+    return (
+      <>
+        {children}
+        <PwaInstallPrompt />
+      </>
+    );
+  }
+
+  // 2. Loading state for protected/auth routes
   if (loading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
@@ -111,7 +141,8 @@ export function SessionGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error) {
+  // 3. Error state (only enforced on protected routes)
+  if (error && isProtectedRoute) {
     return (
       <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-6 text-center">
         <Coffee className="w-12 h-12 text-ink-muted mb-4 opacity-50" />
@@ -120,7 +151,10 @@ export function SessionGuard({ children }: { children: ReactNode }) {
           Your 2-minute rejoin window has ended and the table has been released.
         </p>
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            setError(false);
+            router.push('/');
+          }}
           className="px-6 py-2.5 bg-ink text-white rounded-xl text-sm font-bold shadow-md active:scale-95 transition-all"
         >
           Scan New Table
@@ -129,7 +163,7 @@ export function SessionGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (sessionData?.status === 'exited' && !pathname.startsWith('/t/') && !pathname.startsWith('/verify')) {
+  if (sessionData?.status === 'exited' && isProtectedRoute) {
     const mins = Math.floor(timeLeft / 60);
     const secs = timeLeft % 60;
     
