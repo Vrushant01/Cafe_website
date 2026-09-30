@@ -229,12 +229,12 @@ export default function LandingPage() {
             </h2>
           </div>
           
-          <h1 className="text-6xl md:text-8xl lg:text-[110px] font-serif font-bold text-white leading-[0.95] tracking-tight mb-10">
+          <h1 className="text-[12vw] sm:text-6xl md:text-8xl lg:text-[110px] font-serif font-bold text-white leading-[0.95] tracking-tight mb-10">
             <div className="overflow-hidden pb-2"><div className="opacity-0 animate-[slideUp_1.2s_cubic-bezier(0.2,0.8,0.2,1)_0.6s_forwards]">Good chai.</div></div>
             <div className="overflow-hidden pb-2"><div className="opacity-0 animate-[slideUp_1.2s_cubic-bezier(0.2,0.8,0.2,1)_0.8s_forwards]">Good company.</div></div>
           </h1>
           
-          <p className="text-lg md:text-xl text-white/80 font-serif max-w-md leading-relaxed opacity-0 animate-[fade_1.5s_ease_1.2s_forwards]">
+          <p className="text-base sm:text-lg md:text-xl text-white/80 font-serif max-w-md leading-relaxed opacity-0 animate-[fade_1.5s_ease_1.2s_forwards]">
             A warm place for chai, comforting bites, and conversations that stay a little longer.
           </p>
           
@@ -261,7 +261,7 @@ export default function LandingPage() {
           
           <div className={`md:col-span-5 md:col-start-2 space-y-10 transition-all duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${storyReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}>
             <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#9B5B22]">The Café</h2>
-            <h3 className="text-5xl md:text-7xl font-serif font-bold text-[#1E1813] leading-[1.05] tracking-tight">
+            <h3 className="text-[10vw] sm:text-5xl md:text-7xl font-serif font-bold text-[#1E1813] leading-[1.05] tracking-tight">
               A place made<br/>for slow moments.
             </h3>
             <p className="text-xl text-[#524A42] font-serif leading-relaxed">
@@ -307,7 +307,7 @@ export default function LandingPage() {
           </div>
 
           <div className={`flex-1 space-y-12 transition-all duration-[1.5s] delay-200 ease-out ${cultureReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}>
-            <h3 className="text-6xl md:text-8xl font-serif font-bold leading-[0.9] tracking-tighter">
+            <h3 className="text-[12vw] sm:text-6xl md:text-8xl font-serif font-bold leading-[0.9] tracking-tighter">
               CHAI<br/>IS MORE<br/>THAN A DRINK.
             </h3>
             <p className="text-xl font-serif text-white/70 leading-relaxed max-w-md">
@@ -324,9 +324,9 @@ export default function LandingPage() {
       <section ref={bitesReveal.ref} className="w-full py-32 md:py-48 bg-[#FBF9F5]">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
           
-          <div className={`mb-24 transition-all duration-[1.5s] ease-out ${bitesReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          <div className={`mb-16 md:mb-24 transition-all duration-[1.5s] ease-out ${bitesReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
             <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#9B5B22] mb-6">Signature Bites</h2>
-            <h3 className="text-5xl md:text-7xl font-serif font-bold text-[#1E1813] leading-[1.05] tracking-tight">
+            <h3 className="text-[10vw] sm:text-5xl md:text-7xl font-serif font-bold text-[#1E1813] leading-[1.05] tracking-tight">
               A few<br/>favourites.
             </h3>
           </div>
@@ -368,8 +368,8 @@ export default function LandingPage() {
       <section id="space" ref={spaceReveal.ref} className="w-full py-32 md:py-48 bg-white overflow-hidden">
         <div className="max-w-[1600px] mx-auto px-6 md:px-12">
           
-          <div className={`text-center mb-24 md:mb-32 transition-all duration-[1.5s] ease-out ${spaceReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-            <h3 className="text-4xl sm:text-6xl md:text-8xl font-serif font-bold text-[#1E1813] leading-none tracking-tighter">
+          <div className={`text-center mb-16 md:mb-32 transition-all duration-[1.5s] ease-out ${spaceReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+            <h3 className="text-[9vw] sm:text-6xl md:text-8xl font-serif font-bold text-[#1E1813] leading-none tracking-tighter">
               COME FOR THE CHAI.<br/>
               <span className="text-[#9B5B22] italic">STAY FOR THE COMPANY.</span>
             </h3>
@@ -455,11 +455,11 @@ export default function LandingPage() {
       </section>
 
       {/* Mobile View - Normal Flow Stack */}
-      <section className="w-full py-32 bg-[#0A0807] text-[#FBF9F5] md:hidden">
+      <section className="w-full py-24 sm:py-32 bg-[#0A0807] text-[#FBF9F5] md:hidden">
         <div className="px-6 flex flex-col items-center text-center space-y-8">
-          <h2 className="text-[14vw] font-serif font-bold leading-none">CHAI.</h2>
-          <h2 className="text-[14vw] font-serif font-bold leading-none text-[#C17B3A] italic">CONVERSATION.</h2>
-          <h2 className="text-[14vw] font-serif font-bold leading-none">CONNECTION.</h2>
+          <h2 className="text-[11vw] font-serif font-bold leading-none">CHAI.</h2>
+          <h2 className="text-[11vw] font-serif font-bold leading-none text-[#C17B3A] italic">CONVERSATION.</h2>
+          <h2 className="text-[11vw] font-serif font-bold leading-none">CONNECTION.</h2>
         </div>
       </section>
 
@@ -469,8 +469,8 @@ export default function LandingPage() {
       <section id="contact" ref={contactReveal.ref} className="w-full py-32 md:py-48 bg-[#FBF9F5]">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
           
-          <div className={`mb-24 md:mb-32 transition-all duration-[1.5s] ease-out ${contactReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-            <h3 className="text-5xl md:text-8xl font-serif font-bold text-[#1E1813] leading-none tracking-tighter">
+          <div className={`mb-16 md:mb-32 transition-all duration-[1.5s] ease-out ${contactReveal.isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+            <h3 className="text-[11vw] sm:text-5xl md:text-8xl font-serif font-bold text-[#1E1813] leading-none tracking-tighter">
               COME SAY HELLO.
             </h3>
           </div>

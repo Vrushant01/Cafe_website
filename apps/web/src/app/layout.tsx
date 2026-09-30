@@ -63,7 +63,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         />
       </head>
-      <body className="min-h-screen bg-canvas text-ink antialiased">
+      <body className="min-h-screen bg-canvas text-ink antialiased overflow-x-hidden">
         {children}
       </body>
     </html>

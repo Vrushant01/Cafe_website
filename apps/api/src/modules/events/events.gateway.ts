@@ -8,9 +8,18 @@ import {
 import { Server, Socket } from 'socket.io';
 import { SOCKET_EVENTS, TableStatus, OrderStatus } from '@chai-partner/shared';
 
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigins = [
+  frontendUrl,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:4000',
+];
+
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
+    credentials: true,
   },
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
