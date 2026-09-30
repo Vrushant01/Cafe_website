@@ -143,7 +143,7 @@ export default function MyOrdersPage() {
               <Receipt className="w-8 h-8 text-ink-faint" />
             </div>
             <h2 className="text-lg font-serif font-bold text-ink mb-2">No Orders Yet</h2>
-            <p className="text-sm text-ink-muted mb-6">You haven't placed any orders in this session.</p>
+            <p className="text-sm text-ink-muted mb-6">You haven&apos;t placed any orders in this session.</p>
             <button
               onClick={() => router.push('/menu')}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-xl shadow-sm hover:bg-gold-deep transition-all active:scale-95"

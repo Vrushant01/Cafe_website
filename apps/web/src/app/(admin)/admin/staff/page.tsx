@@ -663,7 +663,7 @@ function StaffManagementContent() {
                   <span>Confirm Role Permission Change</span>
                 </div>
                 <p className="text-[11px] text-ink-muted leading-relaxed">
-                  Changing this role will immediately modify this staff member's administrative access across the operations console.
+                  Changing this role will immediately modify this staff member&apos;s administrative access across the operations console.
                 </p>
                 <div className="flex items-center justify-between text-xs font-mono py-1 px-2 bg-white/70 rounded border border-gold-muted/40">
                   <span>Current: <strong>{ROLE_CONFIGS[editingStaff.role]?.label}</strong></span>

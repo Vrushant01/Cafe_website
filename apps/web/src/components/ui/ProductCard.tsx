@@ -53,7 +53,7 @@ export function ProductCard({
           <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-ink/90 text-white backdrop-blur-xs">
               <Sparkles className="w-3 h-3 text-gold" />
-              Chef's Pick
+              Chef&apos;s Pick
             </span>
             <VegIndicator isVeg={item.veg_flag} />
           </div>

@@ -276,7 +276,7 @@ export default function MenuPage() {
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gold-deep" />
               <span className="text-xs sm:text-sm text-ink font-medium">
-                Searching for "<span className="font-bold text-ink">{searchQuery}</span>"
+                Searching for &quot;<span className="font-bold text-ink">{searchQuery}</span>&quot;
               </span>
               <span className="text-xs text-ink-faint font-mono">
                 ({filteredItems.length} {filteredItems.length === 1 ? 'match' : 'matches'})
@@ -308,7 +308,7 @@ export default function MenuPage() {
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-4 bg-gold-deep rounded-full" />
                 <h2 className="text-xs font-bold uppercase tracking-widest text-ink font-sans">
-                  Today's Favourites
+                  Today&apos;s Favourites
                 </h2>
               </div>
               <span className="text-xs text-ink-faint">Café Bestsellers</span>

@@ -70,7 +70,7 @@ export default function CheckoutPage() {
           Your Cart is Empty
         </h2>
         <p className="text-xs sm:text-sm text-ink-muted mb-6 max-w-xs leading-relaxed">
-          You haven't added any chais or snacks yet. Return to the menu to explore handcrafted specials.
+          You haven&apos;t added any chais or snacks yet. Return to the menu to explore handcrafted specials.
         </p>
         <button
           onClick={() => router.push('/menu')}

@@ -132,7 +132,7 @@ export function SessionGuard({ children }: { children: ReactNode }) {
         </div>
         
         <h1 className="text-2xl font-serif font-bold text-ink tracking-tight mb-2">
-          You're temporarily away
+          You&apos;re temporarily away
         </h1>
         <p className="text-sm text-ink-muted max-w-xs mb-8 leading-relaxed">
           Your table is reserved for you for the next 2 minutes.<br/><br/>
